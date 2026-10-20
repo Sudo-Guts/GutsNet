@@ -34,7 +34,7 @@ Cuando el servidor vuelva a estar disponible, desde el repositorio:
     git pull --ff-only origin main
 
     # Preflight: solo verifica, sin cambios:
-    bash SERVER/ftp/install.sh --check
+    sudo bash SERVER/ftp/install.sh --check
 
     # Tras revisar el resultado:
     sudo bash SERVER/ftp/install.sh --install

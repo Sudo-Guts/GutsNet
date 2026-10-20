@@ -21,7 +21,7 @@ info() { printf '[GutsNet FTP] %s\n' "$*"; }
 usage() {
     cat <<'HELP'
 Uso:
-  bash SERVER/ftp/install.sh --check
+  sudo bash SERVER/ftp/install.sh --check
   sudo bash SERVER/ftp/install.sh --install
 
 --check: verifica requisitos sin cambiar nada.
@@ -71,6 +71,7 @@ preflight() {
 
 check_status() {
     info "Modo --check: no se modificara el sistema."
+    [[ "$EUID" -eq 0 ]] || die "Usa sudo para verificar la llave TLS privada."
     preflight
     info "Certificado de GutsNet: OK"
     if command -v vsftpd >/dev/null; then

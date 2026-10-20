@@ -1,0 +1,73 @@
+name: Validacion estatica de FTPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "SERVER/ftp/**"
+      - ".github/workflows/ftp-checks.yml"
+  pull_request:
+    paths:
+      - "SERVER/ftp/**"
+      - ".github/workflows/ftp-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  ftps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener repositorio
+        uses: actions/checkout@v4
+
+      - name: Sintaxis Bash
+        run: |
+          bash -n SERVER/ftp/install.sh
+          bash -n SERVER/ftp/check.sh
+          echo "OK: sintaxis Bash"
+
+      - name: Verificar invariantes de configuracion FTPS
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          conf = Path("SERVER/ftp/vsftpd.conf")
+          values = {}
+          for line in conf.read_text(encoding="utf-8").splitlines():
+              line = line.strip()
+              if not line or line.startswith("#"):
+                  continue
+              if "=" not in line:
+                  raise SystemExit("Directiva invalida: " + line)
+              key, value = line.split("=", 1)
+              if key in values:
+                  raise SystemExit("Directiva repetida: " + key)
+              values[key] = value
+          required = {
+              "anonymous_enable": "NO",
+              "local_enable": "YES",
+              "write_enable": "YES",
+              "listen_port": "21",
+              "local_root": "/home/gutsnet-shared/ftp",
+              "chroot_local_user": "YES",
+              "allow_writeable_chroot": "NO",
+              "userlist_enable": "YES",
+              "userlist_deny": "NO",
+              "ssl_enable": "YES",
+              "force_local_logins_ssl": "YES",
+              "force_local_data_ssl": "YES",
+              "ssl_sslv2": "NO",
+              "ssl_sslv3": "NO",
+              "ssl_tlsv1": "NO",
+              "ssl_tlsv1_1": "NO",
+              "ssl_tlsv1_2": "YES",
+              "ssl_tlsv1_3": "YES",
+              "pasv_enable": "YES",
+              "pasv_min_port": "40000",
+              "pasv_max_port": "40010",
+          }
+          for key, value in required.items():
+              if values.get(key) != value:
+                  raise SystemExit(f"Configuracion insegura o incorrecta: {key}={values.get(key)}")
+          print("OK: FTPS requiere TLS y protege la raiz chroot")
+          PY
