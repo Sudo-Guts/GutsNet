@@ -16,6 +16,7 @@ from urllib.parse import quote, urlencode
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--user", default="cine")
 parser.add_argument("--ca", required=True)
+parser.add_argument("--host", default="gutsnet.test")
 args = parser.parse_args()
 password = sys.stdin.readline().rstrip("\r\n")
 if not password:
@@ -30,7 +31,7 @@ context = ssl.create_default_context(cafile=args.ca)
 class LocalHTTPS(http.client.HTTPSConnection):
     def connect(self):
         transport = socket.create_connection(("127.0.0.1", 443), timeout=self.timeout)
-        self.sock = context.wrap_socket(transport, server_hostname="gutsnet.test")
+        self.sock = context.wrap_socket(transport, server_hostname=args.host)
 
 
 class Client:
@@ -44,7 +45,7 @@ class Client:
         if self.cookies:
             merged["Cookie"] = "; ".join(m.key + "=" + m.coded_value for m in self.cookies.values())
         merged.update(headers or {})
-        connection = LocalHTTPS("gutsnet.test", timeout=60, context=context)
+        connection = LocalHTTPS(args.host, timeout=60, context=context)
         try:
             connection.request(method, path, body=body, headers=merged)
             response = connection.getresponse()

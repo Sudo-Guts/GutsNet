@@ -4,7 +4,8 @@ set -Eeuo pipefail
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 ok() { printf 'OK: %s\n' "$*"; }
 [[ "$EUID" -eq 0 ]] || fail 'Usa sudo para revisar la configuracion y permisos.'
-for command in apache2ctl openssl curl runuser; do command -v "$command" >/dev/null || fail "Falta $command"; done
+for command in apache2ctl openssl curl runuser python3; do command -v "$command" >/dev/null || fail "Falta $command"; done
+here="$(cd -- "$(dirname -- "$0")" && pwd)"
 cert=/etc/ssl/certs/gutsnet.crt
 key=/etc/ssl/private/gutsnet.key
 ca=/etc/ssl/certs/gutsnet-ca.crt
@@ -53,12 +54,7 @@ ok 'Configuracion, certificado y permisos de Apache'
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-code="$(curl --noproxy '*' --silent --show-error --max-time 15 -o /dev/null \
-    -D "$tmp/http.headers" -w '%{http_code}' -H 'Host: gutsnet.test' http://127.0.0.1/cinema/)"
-[[ "$code" == 302 ]] || fail "HTTP /cinema/ respondio $code; se esperaba 302 hacia HTTPS."
-headers="$(< "$tmp/http.headers")"
-[[ "${headers,,}" == *'location: https://gutsnet.test/cinema/'* ]] || fail 'La redireccion no apunta a HTTPS.'
-ok 'HTTP redirige Cinema a HTTPS'
+python3 "$here/test-redirects.py"
 
 for path in /cinema /cinema/ /cinema/manage.php /cinema/media/Prueba_GutsCinema.mp4 /cinema/media/prueba.mp3; do
     code="$(curl --noproxy '*' --silent --show-error --max-time 15 \
@@ -70,3 +66,21 @@ for path in /cinema /cinema/ /cinema/manage.php /cinema/media/Prueba_GutsCinema.
 done
 ok 'Catalogo y URL directa de video exigen credenciales por HTTPS'
 printf 'GutsCinema: https://gutsnet.test/cinema/\n'
+# Una prueba local con Host:gutsnet.test no comprueba el DNS del telefono.
+# Informa solo las IPv4 reales del equipo y valida su cobertura en el certificado.
+while IFS= read -r address; do
+    if openssl x509 -in "$cert" -noout -checkip "$address" >/dev/null 2>&1; then
+        printf 'Acceso por IP (incluida en el certificado): https://%s/cinema/\n' "$address"
+    else
+        printf 'IP %s: el certificado existente no incluye esta direccion. Configura DNS local para gutsnet.test o un certificado con esta IP.\n' "$address"
+    fi
+done < <(python3 - <<'PY'
+import ipaddress
+import subprocess
+addresses = subprocess.check_output(['hostname', '-I'], text=True).split()
+for word in sorted(set(addresses)):
+    address = ipaddress.ip_address(word)
+    if address.version == 4 and not address.is_unspecified and not address.is_loopback:
+        print(address)
+PY
+)

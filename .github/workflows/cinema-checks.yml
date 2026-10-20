@@ -34,6 +34,7 @@ jobs:
           bash -n SERVER/cinema/add.sh
           for file in C0DE/web/public/cinema/*.php; do php -l "$file"; done
           python3 -m py_compile SERVER/cinema/test-management.py
+          python3 -m py_compile SERVER/cinema/test-redirects.py
           node --check C0DE/web/public/assets/js/cinema.js
           node scripts/test-cinema-ui.cjs
           python3 scripts/version-web-assets.py --check
@@ -69,6 +70,9 @@ jobs:
             --install --password-stdin --skip-packages
           test "$(systemctl show apache2.service --property=ProtectHome --value)" = read-only
           printf '%s\n' "$cinema_password" | bash SERVER/cinema/test.sh --password-stdin
+          # Sin DNS local: TLS, cookies Secure, Range y gestion por IP literal.
+          cinema_ip="$(hostname -I | awk '{print $1}')"
+          printf '%s\n' "$cinema_password" | bash SERVER/cinema/test.sh --password-stdin --host "$cinema_ip"
           sudo bash SERVER/cinema/add.sh C0DE/web/public/assets/video/demostracion.mp4 \
             'Pelicula_<b>&"demo".mp4'
 

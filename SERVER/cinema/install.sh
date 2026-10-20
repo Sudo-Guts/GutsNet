@@ -206,7 +206,7 @@ for name in gutsnet.conf gutsnet-ssl.conf; do
     install -o root -g root -m 644 "$repo/SERVER/apache/$name" "$target"
 done
 
-a2enmod ssl auth_basic authn_file alias headers
+a2enmod ssl auth_basic authn_file alias headers rewrite
 a2ensite gutsnet.conf gutsnet-ssl.conf
 apache2ctl configtest
 make -C "$repo" deploy

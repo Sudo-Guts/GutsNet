@@ -51,15 +51,49 @@ Si todavía no está definido en `/etc/hosts`, agrega:
 127.0.0.1 gutsnet.test
 ```
 
-En otra computadora de la red usa la **IP LAN actual del servidor**, que puedes
-consultar con `hostname -I`, en lugar de `127.0.0.1`. El puerto TCP 443 debe
-estar permitido en el firewall de esa red; el instalador no cambia sus reglas.
+En un teléfono u otro equipo de la misma red, abre la **IP LAN actual del servidor**,
+que puedes consultar con `hostname -I`, por ejemplo:
+
+```text
+http://192.168.244.135/
+https://192.168.244.135/cinema/
+```
+
+La IP es un ejemplo: usa la de la interfaz que llega a tu red, no la de Docker.
+El enlace Cinema y su redirección a HTTPS conservan esa IP. La cuenta y los medios
+siguen protegidos por HTTPS. Aplica la configuración con `make install-cinema`;
+`make deploy` no instala los VirtualHosts.
+
+`DNS_PROBE_FINISHED_NXDOMAIN` en `gutsnet.test` significa que ese dispositivo no
+resuelve el nombre. El `/etc/hosts` del servidor solo afecta al servidor. Para usar
+el nombre en el teléfono, configura un DNS de la red que lo resuelva a la IP LAN y
+haz que el teléfono use ese DNS. Cambiar el DNS por uno público no crea este nombre.
+Puedes usar directamente la IP sin configurar DNS.
+
+El puerto TCP 443 debe estar permitido y la IP debe ser alcanzable desde el teléfono;
+el instalador no cambia las reglas de red. Si Ubuntu está en una máquina virtual,
+su interfaz debe permitir conexiones desde la LAN (por ejemplo, adaptador puente).
 
 Si se crea la CA local, su certificado público queda en
 `/etc/ssl/certs/gutsnet-ca.crt`. Impórtalo en las autoridades de confianza del
 navegador de los equipos que usarán la biblioteca. Solo se comparte el archivo
 `.crt` público; la llave de la CA permanece en `/etc/gutsnet/tls/ca.key`.
 Si se reutiliza tu certificado anterior, se conserva su configuración de confianza.
+
+`make check-cinema` muestra las IPv4 del servidor e indica cuáles están incluidas
+en el certificado. Un certificado anterior que solo cubra `gutsnet.test` necesita
+DNS local para ese nombre, o un certificado nuevo que también cubra la IP. No se
+reemplaza el certificado compartido con FTPS al corregir la redirección.
+
+Para probar desde Ubuntu la identidad TLS, reproducción y carga/baja usando la IP:
+
+```bash
+bash SERVER/cinema/test.sh --host 192.168.244.135
+```
+
+Esta prueba conecta a Apache por loopback conservando la IP como identidad TLS y
+Host; no verifica la ruta de red desde el teléfono. En el teléfono también debes
+confiar en la CA local para que HTTPS sea válido.
 
 Las pruebas usan `curl --cacert` y verifican nombre y cadena TLS; no necesitan
 omitir la validación del certificado ni modificar la confianza global del sistema.
