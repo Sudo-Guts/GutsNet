@@ -6,18 +6,21 @@
 - [x] Crear README.md.
 - [x] Configurar .gitignore.
 - [x] Crear checklist.
-- [ ] Inicializar repositorio Git.
+- [x] Inicializar repositorio Git y publicar GutsNet en GitHub.
 
 ## Etapa 2. Apache
-- [ ] Revisar configuración existente.
-- [ ] Configurar VirtualHost.
-- [ ] Crear página de inicio.
-- [ ] Crear página personal.
+- [x] Revisar configuración existente.
+- [x] Configurar VirtualHost.
+- [x] Crear página de inicio.
+- [x] Crear página personal.
 - [ ] Agregar currículum.
-- [ ] Agregar materias y proyectos.
-- [ ] Integrar multimedia.
-- [ ] Implementar contador de visitas.
+- [x] Agregar materias y proyectos (contenido de las materias por ampliar).
+- [x] Integrar HTML5 de audio y video; MP3 y MP4 publicados.
+- [x] Implementar contador de visitas mediante PHP y SQLite (código publicado).
 - [ ] Comprobar acceso desde otra computadora.
+- [ ] Ejecutar make test-web y confirmar HTTP 200/206 y contador.
+- [ ] Verificar los códecs del MP4 con ffprobe y probar su reproducción.
+- [ ] Probar enlaces y diseño responsivo en el navegador.
 
 ## Etapa 3. Biblioteca multimedia
 - [ ] Crear almacenamiento privado.
@@ -36,7 +39,7 @@
 - [ ] Probar subida y descarga.
 
 ## Etapa 5. SSH y Jail
-- [ ] Verificar acceso administrativo.
+- [x] Verificar acceso administrativo SSH mediante contraseña.
 - [ ] Crear usuario restringido.
 - [ ] Construir entorno chroot.
 - [ ] Configurar comandos permitidos.
