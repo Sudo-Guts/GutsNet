@@ -20,9 +20,7 @@ help:
 
 echo-tcp: $(OUT)/echo_tcp_server $(OUT)/echo_tcp_client
 
-echo-udp: $(OUT)/echo_udp_server $(OUT)/echo_udp_client \
-	       $(OUT)/daytime_tcp_server $(OUT)/daytime_tcp_client \
-	       $(OUT)/daytime_udp_server $(OUT)/daytime_udp_client
+echo-udp: $(OUT)/echo_udp_server $(OUT)/echo_udp_client
 
 daytime: daytime-tcp daytime-udp
 
@@ -59,4 +57,6 @@ $(OUT)/daytime_udp_client: $(SRC_DAYTIME)/daytime_udp_client.c | $(OUT)
 
 clean:
 	@rm -f $(OUT)/echo_tcp_server $(OUT)/echo_tcp_client \
-	       $(OUT)/echo_udp_server $(OUT)/echo_udp_client
+	       $(OUT)/echo_udp_server $(OUT)/echo_udp_client \
+	       $(OUT)/daytime_tcp_server $(OUT)/daytime_tcp_client \
+	       $(OUT)/daytime_udp_server $(OUT)/daytime_udp_client
