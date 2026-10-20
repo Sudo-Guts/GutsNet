@@ -96,3 +96,10 @@ jobs:
           done
           make test-web
           unset cinema_password auth_before cert_before
+      - name: Diagnosticar un fallo de instalacion
+        if: failure()
+        run: |
+          sudo stat -c '%A %U:%G %n' /home/gutsnet-shared \
+            /home/gutsnet-shared/peliculas /home/gutsnet-shared/peliculas/.incoming || true
+          sudo runuser -u www-data -- id || true
+          sudo tail -n 40 /var/log/apache2/gutsnet_ssl_error.log || true
