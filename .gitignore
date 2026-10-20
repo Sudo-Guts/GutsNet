@@ -15,8 +15,11 @@
 .env.*
 !.env.example
 .htpasswd
+*.htpasswd
 *.key
 *.pem
+*.p12
+*.pfx
 
 # Archivos temporales
 *.log
@@ -41,4 +44,5 @@
 # Bases de datos locales
 *.sqlite
 *.sqlite3
+*.sqlite-*
 *.db

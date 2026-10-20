@@ -16,9 +16,16 @@ RSYNC_FLAGS := -rpt --delete --delete-excluded --no-links \
                --exclude=.env.* \
                --exclude=.htpasswd \
                --exclude=*.db \
-               --exclude=*.sqlite
+               --exclude=*.sqlite \
+               --exclude=*.sqlite3 \
+               --exclude=*.sqlite-* \
+               --exclude=*.htpasswd \
+               --exclude=*.key \
+               --exclude=*.pem \
+               --exclude=*.p12 \
+               --exclude=*.pfx
 
-.PHONY: help check preview deploy test
+.PHONY: help check preview deploy test test-web
 
 # ============================================================
 # Help
@@ -30,6 +37,7 @@ help:
 	@echo "  make preview  - Mostrar cambios"
 	@echo "  make deploy   - Publicar sitio web"
 	@echo "  make test     - Comprobar Apache"
+	@echo "  make test-web - Verificar HTML, CSS, JS, audio, video y contador"
 
 # ============================================================
 # Validation
@@ -67,3 +75,9 @@ test:
 		-H "Host: $(HOST)" \
 		http://127.0.0.1/
 
+# ============================================================
+# Comprehensive web tests (HTTP)
+# ============================================================
+
+test-web:
+	@bash "$(ROOT)/scripts/test-web.sh"
