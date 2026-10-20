@@ -30,6 +30,20 @@ if [[ -e "$lock" ]]; then
     runuser -u www-data -- test -w "$lock" \
         || fail 'Apache no puede abrir el bloqueo de Cinema. Ejecuta make install-cinema.'
 fi
+if [[ -d /run/systemd/system ]]; then
+    command -v systemctl >/dev/null && command -v nsenter >/dev/null \
+        || fail 'Falta systemctl o nsenter (util-linux) para comprobar el servicio de Apache.'
+    apache_pid="$(systemctl show apache2.service --property=MainPID --value)"
+    [[ "$apache_pid" =~ ^[1-9][0-9]*$ ]] || fail 'El servicio de Apache no esta activo.'
+    for path in "$storage" "$storage/.incoming"; do
+        if ! nsenter --target "$apache_pid" --mount -- runuser -u www-data -- test -w "$path"; then
+            systemctl show apache2.service --property=ProtectHome --property=ProtectSystem \
+                --property=ReadWritePaths >&2
+            fail 'El servicio de Apache ve Cinema sin escritura. Ejecuta make install-cinema para aplicar la excepcion de systemd.'
+        fi
+    done
+    ok 'Escritura de Cinema dentro del servicio de Apache'
+fi
 apache2ctl configtest
 openssl x509 -in "$cert" -noout -checkend 86400 >/dev/null || fail 'El certificado vence pronto o esta vencido.'
 openssl x509 -in "$cert" -noout -checkhost gutsnet.test >/dev/null || fail 'El certificado no cubre gutsnet.test.'

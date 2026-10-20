@@ -15,6 +15,8 @@ cert=/etc/ssl/certs/gutsnet.crt
 key=/etc/ssl/private/gutsnet.key
 ca_cert=/etc/ssl/certs/gutsnet-ca.crt
 ca_key="$tls_dir/ca.key"
+override_dir=/etc/systemd/system/apache2.service.d
+override_file="$override_dir/gutsnet-cinema.conf"
 account=cine
 mode=""
 password_stdin=0
@@ -51,18 +53,19 @@ done
 
 safe_paths() {
     local path
-    for path in "$shared" "$storage" "$incoming" "$incoming/.lock" "$auth_dir" "$auth_file" "$tls_dir" "$cert" "$key" "$ca_cert" "$ca_key" \
+    for path in "$shared" "$storage" "$incoming" "$incoming/.lock" "$auth_dir" "$auth_file" "$tls_dir" "$cert" "$key" "$ca_cert" "$ca_key" "$override_dir" "$override_file" \
         /var/www/gutsnet /var/www/gutsnet/public /var/lib/gutsnet; do
         [[ ! -L "$path" ]] || fail "No se permite un enlace simbolico en $path"
     done
-    for path in "$shared" "$storage" "$incoming" "$auth_dir" "$tls_dir"; do
+    for path in "$shared" "$storage" "$incoming" "$auth_dir" "$tls_dir" "$override_dir"; do
         [[ ! -e "$path" || -d "$path" ]] || fail "$path no es un directorio"
     done
-    for path in "$auth_file" "$cert" "$key" "$ca_cert" "$ca_key" "$incoming/.lock"; do
+    for path in "$auth_file" "$cert" "$key" "$ca_cert" "$ca_key" "$incoming/.lock" "$override_file"; do
         [[ ! -e "$path" || -f "$path" ]] || fail "$path no es un archivo regular"
     done
     [[ -f "$repo/SERVER/apache/gutsnet.conf" && -f "$repo/SERVER/apache/gutsnet-ssl.conf" ]] || fail 'Faltan VirtualHosts de GutsNet.'
     [[ -f "$repo/C0DE/web/public/cinema/index.php" ]] || fail 'Falta el catalogo PHP.'
+    [[ -f "$here/apache2-systemd.conf" ]] || fail 'Falta la configuracion de escritura de Cinema para systemd.'
 }
 
 if [[ "$mode" == --check ]]; then
@@ -83,11 +86,15 @@ if [[ "$skip_packages" == 0 ]]; then
     info 'Instalando requisitos de Apache y PHP...'
     apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        apache2 apache2-utils php libapache2-mod-php php-sqlite3 openssl rsync curl python3 make
+        apache2 apache2-utils php libapache2-mod-php php-sqlite3 openssl rsync curl python3 make util-linux
 fi
 for command in apache2ctl a2enmod a2ensite htpasswd openssl php rsync python3 curl make runuser; do
     command -v "$command" >/dev/null || fail "Falta $command"
 done
+if [[ -d /run/systemd/system ]]; then
+    command -v systemctl >/dev/null && command -v nsenter >/dev/null \
+        || fail 'La comprobacion de Apache con systemd necesita systemctl y nsenter (util-linux).'
+fi
 getent passwd www-data >/dev/null || fail 'No existe la cuenta de Apache www-data.'
 python3 "$repo/scripts/version-web-assets.py" --check
 for file in "$repo"/C0DE/web/public/cinema/*.php; do php -l "$file"; done
@@ -221,6 +228,12 @@ if ! runuser -u www-data -- test -w "$storage"; then
 fi
 
 if [[ -d /run/systemd/system ]]; then
+    # El servicio puede ver /home como solo lectura aunque runuser permita escribir.
+    # La excepcion se limita al almacenamiento privado de Cinema.
+    install -d -o root -g root -m 755 "$override_dir"
+    [[ ! -f "$override_file" ]] || cp -a "$override_file" "$backup/gutsnet-cinema.conf"
+    install -o root -g root -m 644 "$here/apache2-systemd.conf" "$override_file"
+    systemctl daemon-reload
     systemctl enable apache2
     systemctl restart apache2
     systemctl is-active --quiet apache2 || fail 'Apache no quedo activo.'

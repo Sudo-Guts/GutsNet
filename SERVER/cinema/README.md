@@ -25,6 +25,9 @@ El instalador:
   sus permisos. `.incoming/` queda privada para recibir archivos antes de publicarlos.
 - Configura PHP para recibir un archivo de hasta **2 GiB** (2048 MiB), con margen
   para el formulario multipart y hasta una hora para recibirlo.
+- En equipos con systemd, instala una excepción `ReadWritePaths` únicamente para
+  `/home/gutsnet-shared/peliculas`. Permite gestionar Cinema cuando el servicio de
+  Apache tiene `ProtectHome=read-only`, como en paquetes recientes de Debian/Ubuntu.
 - Conserva el área de FTP, las películas existentes y el contador de visitas.
 - Reutiliza un certificado TLS existente que cubra `gutsnet.test`. Si no hay
   certificado ni llave, crea una CA local y un certificado para el nombre del
@@ -82,6 +85,13 @@ La reinstalación corrige el propietario y los permisos de la carpeta de Cinema,
 su área de carga y su bloqueo de escritura, incluso si quedaron creados por root.
 Conserva los archivos y las cuentas existentes. `make check-cinema` identifica
 los permisos pendientes antes de intentar una carga.
+
+Si la terminal permite escribir pero el catálogo oculta los controles, el servicio
+de Apache puede estar viendo `/home` como solo lectura. `make check-cinema` revisa
+también el entorno de montajes del servicio. `make install-cinema` instala
+`/etc/systemd/system/apache2.service.d/gutsnet-cinema.conf`, recarga systemd y reinicia
+Apache. La excepción habilita la carpeta de Cinema y conserva la protección del
+resto de `/home`.
 
 1. Abre **https://gutsnet.test/cinema/** con tu cuenta habitual.
 2. En «Agrega un video o una canción», selecciona un **MP4 o MP3** y pulsa

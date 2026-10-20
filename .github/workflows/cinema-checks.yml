@@ -54,6 +54,12 @@ jobs:
           sudo apt-get -qq update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
             apache2 apache2-utils php libapache2-mod-php php-sqlite3 openssl rsync curl python3 make
+      - name: Reproducir proteccion de home en Apache reciente
+        run: |
+          sudo install -d -o root -g root -m 755 /etc/systemd/system/apache2.service.d
+          printf '[Service]\nProtectHome=read-only\n' | \
+            sudo tee /etc/systemd/system/apache2.service.d/90-cinema-home-test.conf >/dev/null
+          sudo systemctl daemon-reload
       - name: Instalar y probar GutsCinema
         shell: bash
         run: |
@@ -61,9 +67,28 @@ jobs:
           cinema_password="$(openssl rand -hex 24)"
           printf '%s\n' "$cinema_password" | sudo bash SERVER/cinema/install.sh \
             --install --password-stdin --skip-packages
+          test "$(systemctl show apache2.service --property=ProtectHome --value)" = read-only
           printf '%s\n' "$cinema_password" | bash SERVER/cinema/test.sh --password-stdin
           sudo bash SERVER/cinema/add.sh C0DE/web/public/assets/video/demostracion.mp4 \
             'Pelicula_<b>&"demo".mp4'
+
+          # Sin la excepcion, la terminal escribe pero Apache oculta la gestion.
+          sudo rm /etc/systemd/system/apache2.service.d/gutsnet-cinema.conf
+          sudo systemctl daemon-reload
+          sudo systemctl restart apache2
+          sudo runuser -u www-data -- test -w /home/gutsnet-shared/peliculas
+          if sudo bash SERVER/cinema/check.sh > "$RUNNER_TEMP/cinema-home.log" 2>&1; then
+            echo 'ERROR: no se detecto Cinema sin escritura dentro del servicio'
+            exit 1
+          fi
+          grep -q 'El servicio de Apache ve Cinema sin escritura' "$RUNNER_TEMP/cinema-home.log"
+          if printf '%s\n' "$cinema_password" | bash SERVER/cinema/test.sh \
+            --password-stdin > "$RUNNER_TEMP/cinema-form.log" 2>&1; then
+            echo 'ERROR: se acepto un catalogo sin formulario de carga'
+            exit 1
+          fi
+          grep -q 'el catálogo no habilitó el formulario de carga' "$RUNNER_TEMP/cinema-form.log"
+          ! grep -q 'Traceback\|StopIteration' "$RUNNER_TEMP/cinema-form.log"
 
           # Repara directorios inaccesibles y un bloqueo dejado por root.
           # La reinstalacion conserva medios, certificado y credenciales.
@@ -127,4 +152,6 @@ jobs:
           sudo stat -c '%A %U:%G %n' /home/gutsnet-shared \
             /home/gutsnet-shared/peliculas /home/gutsnet-shared/peliculas/.incoming || true
           sudo runuser -u www-data -- id || true
+          sudo systemctl show apache2.service --property=ProtectHome --property=ProtectSystem \
+            --property=ReadWritePaths || true
           sudo tail -n 40 /var/log/apache2/gutsnet_ssl_error.log || true

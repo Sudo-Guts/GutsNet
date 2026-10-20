@@ -87,7 +87,13 @@ class Catalog(HTMLParser):
             self.current = None
 
     def csrf(self):
-        return next(f["csrf"] for f in self.forms if f.get("action") == "upload")
+        token = next((f.get("csrf") for f in self.forms
+            if f.get("action") == "upload"), None)
+        if not token:
+            raise SystemExit("ERROR: el catálogo no habilitó el formulario de carga. "
+                "Ejecuta make check-cinema para revisar la escritura dentro del servicio "
+                "de Apache y make install-cinema para aplicar la configuración.")
+        return token
 
     def deletion(self, name):
         return next((f for f in self.forms
