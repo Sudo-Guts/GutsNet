@@ -117,9 +117,13 @@ install_jail() {
     else
         usermod -a -G "$GROUP" "$USER_NAME"
     fi
-    runuser -u "$USER_NAME" -- test -w "$JAIL/compartido" \
-        && runuser -u "$USER_NAME" -- test -x "$JAIL/compartido" \
-        || die "La cuenta restringida no puede escribir/recorrer el area compartida."
+    if ! runuser -u "$USER_NAME" -- test -w "$JAIL/compartido" \
+        || ! runuser -u "$USER_NAME" -- test -x "$JAIL/compartido"; then
+        runuser -u "$USER_NAME" -- id >&2
+        stat -c '%A %U:%G %n' /home /home/gutsnet-shared /home/gutsnet-shared/ftp \
+            "$SHARED" "$JAIL" "$JAIL/compartido" >&2
+        die "La cuenta restringida no puede escribir/recorrer el area compartida."
+    fi
 
     # Respaldar antes de tocar OpenSSH. Nunca reiniciar una sesion sin validar.
     backup="$SSHD.gutsnet-backup-$(date +%Y%m%d-%H%M%S)-$$"

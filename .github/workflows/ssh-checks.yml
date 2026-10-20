@@ -113,4 +113,6 @@ jobs:
         if: failure()
         run: |
           sudo journalctl -u ssh -n 40 --no-pager || true
+          sudo namei -l /home/gutsnet-shared/ftp/intercambio /home/gutsnet-jail/compartido || true
+          sudo getfacl /home/gutsnet-shared/ftp/intercambio /home/gutsnet-jail/compartido || true
           sudo /usr/sbin/sshd -T -C user=gutsjail,host=localhost,addr=127.0.0.1 || true
