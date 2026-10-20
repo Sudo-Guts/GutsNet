@@ -23,6 +23,8 @@
 - [ ] Probar enlaces y diseño responsivo en el navegador.
 
 ## Etapa 3. Biblioteca multimedia
+- [x] Implementar catálogo dinámico PHP para películas (código publicado).
+- [x] Preparar VirtualHost HTTPS y autenticación de rutas (plantilla publicada).
 - [ ] Crear almacenamiento privado.
 - [ ] Configurar autenticación web.
 - [ ] Configurar HTTPS.
