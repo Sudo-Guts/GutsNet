@@ -28,7 +28,7 @@ operativa se realiza desde Ubuntu mediante `make test-web`.
 ### Pendiente
 
 - Incorporar el CV (todavía no disponible).
-- Activar GutsNet Cinema en Ubuntu: los archivos PHP y VirtualHost HTTPS están preparados en el repositorio, pero faltan certificado, credenciales, películas y pruebas en el servidor.
+- Activar GutsCinema en el Ubuntu del usuario mediante `make install-cinema`; el instalador y las pruebas están disponibles en el repositorio.
 - Servicio FTP con directorio compartido.
 - Usuario SSH restringido mediante chroot (el acceso administrador ya fue probado).
 - Clientes y servidores en C: Echo RFC 862 y Daytime RFC 867 (TCP y UDP).
@@ -63,11 +63,21 @@ El destino de `make deploy` se sincroniza con `rsync --delete`:
 Los archivos multimedia privados, el entorno chroot y el área de archivos
 compartidos se almacenarán fuera de la raíz web, en la partición `/home`.
 
-## GutsNet Cinema (configuración pendiente)
+## GutsCinema
 
-Se preparó un catálogo PHP protegido por Apache Basic Auth exclusivamente mediante HTTPS.
-Los archivos audiovisuales se sirven desde `/home/gutsnet-shared/peliculas`, fuera del directorio público.
-Para habilitarlo y comprobar que las URL directas exigen credenciales, sigue [DOC/Instalacion.md](DOC/Instalacion.md).
+Catálogo privado con búsqueda y reproducción de videos mediante Apache y PHP.
+La cuenta protege también las URL directas de los archivos. Las películas se
+almacenan en `/home/gutsnet-shared/peliculas`, fuera de la raíz pública.
+
+```bash
+make install-cinema  # prepara paquetes, TLS, cuenta cine y Apache
+make check-cinema    # revisa configuración y acceso privado
+make test-cinema     # prueba la cuenta y la reproducción parcial
+```
+
+Para importar videos, configurar la confianza HTTPS y acceder desde otros
+equipos, consulta [SERVER/cinema/README.md](SERVER/cinema/README.md).
+La existencia del instalador no implica que ya esté activo en tu Ubuntu.
 
 ## Pruebas
 

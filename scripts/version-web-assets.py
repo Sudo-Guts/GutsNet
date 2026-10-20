@@ -9,7 +9,7 @@ PUBLIC = Path(__file__).resolve().parents[1] / "C0DE/web/public"
 PAGES = [PUBLIC / "index.html", PUBLIC / "materias.html", PUBLIC / "cinema/index.php"]
 REFERENCE = re.compile(
     r'(?P<start>(?:href|src|poster)=")'
-    r'(?P<path>(?:\.\./)?assets/(?:css/style\.css|js/main\.js|img/[\w-]+\.svg))'
+    r'(?P<path>(?:\.\./)?assets/(?:css/[\w-]+\.css|js/[\w-]+\.js|img/[\w-]+\.svg))'
     r'(?:\?v=[a-f0-9]+)?(?P<end>")'
 )
 

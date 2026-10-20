@@ -25,7 +25,7 @@ RSYNC_FLAGS := -rpt --delete --delete-excluded --no-links \
                --exclude=*.p12 \
                --exclude=*.pfx
 
-.PHONY: help check preview deploy test test-web
+.PHONY: help check preview deploy test test-web install-cinema check-cinema test-cinema
 
 # ============================================================
 # Help
@@ -38,6 +38,9 @@ help:
 	@echo "  make deploy   - Publicar sitio web"
 	@echo "  make test     - Comprobar Apache"
 	@echo "  make test-web - Verificar HTML, CSS, JS, audio, video y contador"
+	@echo "  make install-cinema - Configurar GutsCinema (pide sudo y contrasena de cine)"
+	@echo "  make check-cinema   - Revisar HTTPS, Apache y acceso privado"
+	@echo "  make test-cinema    - Probar el catalogo y la reproduccion con tu cuenta"
 
 # ============================================================
 # Validation
@@ -83,3 +86,12 @@ test:
 
 test-web:
 	@bash "$(ROOT)/scripts/test-web.sh"
+
+install-cinema:
+	@sudo bash "$(ROOT)/SERVER/cinema/install.sh" --install
+
+check-cinema:
+	@sudo bash "$(ROOT)/SERVER/cinema/check.sh"
+
+test-cinema:
+	@bash "$(ROOT)/SERVER/cinema/test.sh"
