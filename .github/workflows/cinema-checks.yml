@@ -37,6 +37,18 @@ jobs:
           node --check C0DE/web/public/assets/js/cinema.js
           node scripts/test-cinema-ui.cjs
           python3 scripts/version-web-assets.py --check
+      - name: Verificar escritura en la biblioteca dedicada
+        run: |
+          sudo install -d -o www-data -g www-data -m 770 /home/gutsnet-shared/peliculas
+          sudo runuser -u www-data -- python3 - <<'PY'
+          import os
+          import tempfile
+          path = "/home/gutsnet-shared/peliculas"
+          print("Acceso de escritura:", os.access(path, os.W_OK))
+          fd, name = tempfile.mkstemp(prefix=".prueba-permisos-", dir=path)
+          os.close(fd)
+          os.unlink(name)
+          PY
       - name: Instalar requisitos de Ubuntu
         run: |
           sudo apt-get -qq update

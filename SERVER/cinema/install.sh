@@ -96,7 +96,7 @@ php -r 'exit(PHP_INT_SIZE >= 8 && extension_loaded("fileinfo") && extension_load
 
 # No se cambia la propiedad del padre compartido ni del area de FTP.
 [[ -d "$shared" ]] || install -d -o root -g root -m 755 "$shared"
-[[ -d "$storage" ]] || install -d -o root -g www-data -m 770 "$storage"
+[[ -d "$storage" ]] || install -d -o www-data -g www-data -m 770 "$storage"
 install -d -o www-data -g www-data -m 700 "$incoming"
 runuser -u www-data -- test -r "$storage" && runuser -u www-data -- test -x "$storage" \
     || fail "Apache no puede leer/recorrer $storage. Revisa sus permisos sin alterar el area de FTP."
@@ -200,7 +200,7 @@ if [[ ! -e "$storage/Prueba_GutsCinema.mp4" && ! -L "$storage/Prueba_GutsCinema.
 fi
 # Aplica el estado final despues de publicar la web y copiar la muestra.
 # No se tocan permisos del padre compartido ni de archivos del area FTP.
-chown root:www-data "$storage"
+chown www-data:www-data "$storage"
 chmod 0770 "$storage"
 chown www-data:www-data "$incoming"
 chmod 0700 "$incoming"
