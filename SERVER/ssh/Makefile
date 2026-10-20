@@ -4,7 +4,7 @@ CFLAGS   ?= -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror
 TARGET   := out/gutsnet-shell
 SOURCE   := src/gutsnet_shell.c
 
-.PHONY: all clean test
+.PHONY: all clean test test-jail
 all: $(TARGET)
 
 out:
@@ -16,12 +16,19 @@ $(TARGET): $(SOURCE) | out
 test: $(TARGET)
 	./$(TARGET) -c help
 	./$(TARGET) -c pwd
-	@output="$$(./$(TARGET) -c 'cd /' 2>&1)"; \
-		echo "$$output" | grep -q "Comando no permitido"
+	@if ./$(TARGET) -c 'cd /'; then \
+		echo "ERROR: se permitio salir de /compartido"; exit 1; \
+	fi
+	@if ./$(TARGET) -c 'sh'; then \
+		echo "ERROR: se acepto un programa externo"; exit 1; \
+	fi
 	@if readelf -l "$(TARGET)" | grep -q 'INTERP'; then \
 		echo "ERROR: el ejecutable requiere un interprete dinamico"; exit 1; \
 	fi
 	@echo "OK: shell estatica y lista blanca basica"
+
+test-jail: $(TARGET)
+	python3 tests/test_shell.py
 
 clean:
 	rm -rf out

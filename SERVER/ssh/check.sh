@@ -14,8 +14,9 @@ systemctl is-active --quiet ssh || fail "ssh.service inactivo."
 ok "OpenSSH activo y configuracion valida"
 [[ "$(getent passwd "$user" | cut -d: -f6)" == /compartido ]] || fail "Home incorrecto"
 [[ "$(getent passwd "$user" | cut -d: -f7)" == "$binary" ]] || fail "Shell incorrecta"
+[[ "$(id -u "$user")" != 0 ]] || fail 'La cuenta restringida tiene UID 0'
 id -nG "$user" | tr ' ' '\n' | grep -qx gutsnet-files || fail "No pertenece a gutsnet-files"
-if id -nG "$user" | tr ' ' '\n' | grep -Eq '^(sudo|docker|lxd)$'; then fail 'Tiene grupo privilegiado'; fi
+if id -nG "$user" | tr ' ' '\n' | grep -Eq '^(root|sudo|admin|wheel|docker|lxd|disk|shadow)$'; then fail 'Tiene grupo privilegiado'; fi
 [[ -d "$jail" && "$(stat -c '%U:%G' "$jail")" == root:root ]] || fail 'Propietario jail incorrecto'
 mode="$(stat -c '%a' "$jail")"
 (( (8#$mode & 0022) == 0 )) || fail 'El jail es escribible por grupo/otros'
@@ -26,9 +27,14 @@ source_id="$(stat -Lc '%d:%i' "$shared")"
 target_id="$(stat -Lc '%d:%i' "$jail/compartido")"
 [[ "$source_id" == "$target_id" ]] ||
     fail "Montaje compartido inesperado (origen $source_id, destino $target_id)"
+runuser -u "$user" -- test -w "$jail/compartido" \
+    && runuser -u "$user" -- test -x "$jail/compartido" \
+    || fail 'La cuenta no puede crear ni eliminar en /compartido'
+if runuser -u "$user" -- test -w "$jail"; then fail 'La cuenta puede modificar la raiz del jail'; fi
 [[ -x "$binary" && -x "$jail$binary" ]] || fail 'No existe shell restringida'
 if readelf -l "$jail$binary" | grep -q INTERP; then fail 'Shell no estatica'; fi
 ok 'Cuenta restringida, shell estatica, chroot y bind mount'
+ok 'Escritura permitida en /compartido y raiz de la jaula protegida'
 opts="$(/usr/sbin/sshd -T -C user="$user",host=localhost,addr=127.0.0.1)"
 grep -qx 'chrootdirectory /home/gutsnet-jail' <<< "$opts" || fail 'ChrootDirectory incorrecto'
 grep -qx 'disableforwarding yes' <<< "$opts" || fail 'Forwarding permitido'

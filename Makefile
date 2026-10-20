@@ -25,7 +25,7 @@ RSYNC_FLAGS := -rpt --delete --delete-excluded --no-links \
                --exclude=*.p12 \
                --exclude=*.pfx
 
-.PHONY: help check preview deploy test test-web install-cinema check-cinema test-cinema
+.PHONY: help check preview deploy test test-web install-cinema check-cinema test-cinema install-ssh check-ssh test-ssh
 
 # ============================================================
 # Help
@@ -41,6 +41,9 @@ help:
 	@echo "  make install-cinema - Configurar GutsCinema (pide sudo y contrasena de cine)"
 	@echo "  make check-cinema   - Revisar HTTPS, Apache y acceso privado"
 	@echo "  make test-cinema    - Probar el catalogo y la reproduccion con tu cuenta"
+	@echo "  make install-ssh - Configurar la cuenta gutsjail y su area compartida"
+	@echo "  make check-ssh   - Revisar aislamiento SSH y permisos de escritura"
+	@echo "  make test-ssh    - Probar la consola en una jaula temporal"
 
 # ============================================================
 # Validation
@@ -95,3 +98,12 @@ check-cinema:
 
 test-cinema:
 	@bash "$(ROOT)/SERVER/cinema/test.sh"
+
+install-ssh:
+	@sudo bash "$(ROOT)/SERVER/ssh/install.sh" --install
+
+check-ssh:
+	@sudo bash "$(ROOT)/SERVER/ssh/check.sh"
+
+test-ssh:
+	@sudo $(MAKE) -C "$(ROOT)/SERVER/ssh" test-jail
