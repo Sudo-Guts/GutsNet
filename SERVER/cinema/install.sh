@@ -57,6 +57,9 @@ safe_paths() {
     for path in "$shared" "$storage" "$auth_dir" "$tls_dir"; do
         [[ ! -e "$path" || -d "$path" ]] || fail "$path no es un directorio"
     done
+    for path in "$auth_file" "$cert" "$key" "$ca_cert" "$ca_key"; do
+        [[ ! -e "$path" || -f "$path" ]] || fail "$path no es un archivo regular"
+    done
     [[ -f "$repo/SERVER/apache/gutsnet.conf" && -f "$repo/SERVER/apache/gutsnet-ssl.conf" ]] || fail 'Faltan VirtualHosts de GutsNet.'
     [[ -f "$repo/C0DE/web/public/cinema/index.php" ]] || fail 'Falta el catalogo PHP.'
 }
@@ -104,14 +107,14 @@ if [[ -e "$cert" || -e "$key" ]]; then
     [[ -s "$cert" && -s "$key" ]] || fail 'El par TLS existente esta incompleto; no se sobrescribira.'
     openssl x509 -in "$cert" -noout -checkend 86400 >/dev/null || fail 'El certificado existente vencio o vence en menos de un dia.'
     openssl x509 -in "$cert" -noout -checkhost gutsnet.test >/dev/null || fail 'El certificado existente no cubre gutsnet.test.'
-    cmp -s <(openssl x509 -in "$cert" -pubkey -noout) <(openssl pkey -in "$key" -pubout 2>/dev/null) \
+    cmp -s <(openssl x509 -in "$cert" -pubkey -noout) <(openssl pkey -in "$key" -passin pass: -pubout 2>/dev/null) \
         || fail 'El certificado existente y la llave no corresponden.'
     info 'Se conserva el certificado TLS existente, compartido con FTPS.'
 else
     if [[ -e "$ca_cert" || -e "$ca_key" ]]; then
         [[ -s "$ca_cert" && -s "$ca_key" ]] || fail 'La CA local existente esta incompleta.'
         openssl x509 -in "$ca_cert" -noout -checkend 86400 >/dev/null || fail 'La CA local esta vencida.'
-        cmp -s <(openssl x509 -in "$ca_cert" -pubkey -noout) <(openssl pkey -in "$ca_key" -pubout 2>/dev/null) \
+        cmp -s <(openssl x509 -in "$ca_cert" -pubkey -noout) <(openssl pkey -in "$ca_key" -passin pass: -pubout 2>/dev/null) \
             || fail 'El certificado y la llave de la CA no corresponden.'
     else
         info 'Creando la autoridad de certificacion local de GutsNet...'
@@ -160,7 +163,10 @@ else
     [[ -f "$auth_file" ]] || install -o root -g www-data -m 640 /dev/null "$auth_file"
     info "Creando cuenta privada $account..."
     if [[ "$password_stdin" == 1 ]]; then
-        htpasswd -i -B -C 10 "$auth_file" "$account"
+        IFS= read -r new_password || fail 'No se recibio una contrasena por stdin.'
+        [[ -n "$new_password" ]] || fail 'La contrasena recibida por stdin esta vacia.'
+        printf '%s\n' "$new_password" | htpasswd -i -B -C 10 "$auth_file" "$account"
+        unset new_password
     else
         htpasswd -B -C 10 "$auth_file" "$account"
     fi
@@ -184,7 +190,7 @@ apache2ctl configtest
 make -C "$repo" deploy
 
 # Una copia claramente identificada del video publico permite probar la sala.
-if [[ ! -e "$storage/Prueba_GutsCinema.mp4" ]]; then
+if [[ ! -e "$storage/Prueba_GutsCinema.mp4" && ! -L "$storage/Prueba_GutsCinema.mp4" ]]; then
     install -o root -g www-data -m 640 "$repo/C0DE/web/public/assets/video/demostracion.mp4" \
         "$storage/Prueba_GutsCinema.mp4"
 fi
