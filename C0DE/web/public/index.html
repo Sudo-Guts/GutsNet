@@ -1,0 +1,588 @@
+
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+          content="GutsNet: portafolio de electrónica, programación y proyectos académicos.">
+
+    <title>GutsNet | Portafolio</title>
+
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/main.js" defer></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#inicio">
+        Ir al contenido
+    </a>
+
+    <!-- ========================================================
+         Audio
+         ======================================================== -->
+
+    <audio id="musica-ambiental" preload="none"></audio>
+
+    <!-- ========================================================
+         Navegación
+         ======================================================== -->
+
+    <header class="site-header">
+        <div class="container header-content">
+            <a class="logo" href="#inicio">
+                <span class="logo-symbol">G</span>
+                Guts<span>Net</span>
+            </a>
+
+            <nav aria-label="Navegación principal">
+                <a href="#inicio">Inicio</a>
+                <a href="#sobre-mi">Sobre mí</a>
+                <a href="#materias">Materias</a>
+                <a href="#proyectos">Proyectos</a>
+                <a href="#cv">CV</a>
+                <a href="#multimedia">Multimedia</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="inicio">
+
+        <!-- ====================================================
+             Presentación
+             ==================================================== -->
+
+        <section class="hero">
+            <div class="container hero-grid">
+
+                <div class="hero-content">
+                    <p class="eyebrow">
+                        INGENIERÍA EN ELECTRÓNICA
+                    </p>
+
+                    <h1>
+                        Electrónica, código
+                        y <span class="accent">creatividad.</span>
+                    </h1>
+
+                    <p class="hero-description">
+                        Bienvenido a GutsNet, mi espacio para
+                        compartir proyectos, conocimientos y
+                        experiencias en el desarrollo de
+                        sistemas electrónicos.
+                    </p>
+
+                    <div class="hero-actions">
+                        <a class="button primary" href="#proyectos">
+                            Explorar proyectos
+                        </a>
+
+                        <a class="button secondary" href="#sobre-mi">
+                            Conocer más
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Panel tecnológico -->
+
+                <aside class="hero-panel"
+                       aria-label="Áreas de interés">
+
+                    <div class="panel-header">
+                        <span class="status-dot"></span>
+                        SISTEMAS EN DESARROLLO
+                    </div>
+
+                    <div class="panel-body">
+                        <p class="panel-label">
+                            Áreas de trabajo
+                        </p>
+
+                        <h2>Hardware + Software</h2>
+
+                        <div class="tech-row">
+                            <span>RISC-V</span>
+                            <span>FPGA</span>
+                            <span>C / C++</span>
+                            <span>Verilog</span>
+                            <span>VHDL</span>
+                            <span>Linux</span>
+                        </div>
+
+                        <!-- Reproductor de música -->
+
+                        <div class="music-player">
+                            <div class="music-info">
+                                <span id="music-title"
+                                      aria-live="polite">
+                                    Música ambiental 1
+                                </span>
+                            </div>
+
+                            <div class="music-controls">
+                                <button id="music-toggle"
+                                        type="button"
+                                        aria-pressed="false">
+                                    Reproducir
+                                </button>
+
+                                <button id="music-next"
+                                        type="button"
+                                        aria-label="Siguiente canción">
+                                    Siguiente →
+                                </button>
+                            </div>
+
+                            <label for="music-volume">
+                                Volumen
+                            </label>
+
+                            <input id="music-volume"
+                                   type="range"
+                                   min="0"
+                                   max="100"
+                                   value="20"
+                                   aria-label="Volumen de música">
+                        </div>
+                    </div>
+
+                    <!-- Contador de visitas -->
+
+                    <div class="panel-footer">
+                        <span>GUTSNET / PORTFOLIO</span>
+
+                        <div class="visits-indicator">
+                            <span class="visits-label">
+                                VISITAS
+                            </span>
+
+                            <strong id="contador-visitas"
+                                    aria-live="polite">
+                                Cargando...
+                            </strong>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- ====================================================
+             Sobre mí
+             ==================================================== -->
+
+        <section id="sobre-mi" class="section">
+            <div class="container">
+                <p class="eyebrow">PERFIL</p>
+
+                <h2 class="section-title">
+                    Sobre mí
+                </h2>
+
+                <div class="about-grid">
+                    <div class="card">
+                        <h3>Hola, soy Gustavo.</h3>
+
+                        <p>
+                            Soy estudiante de Ingeniería en
+                            Electrónica en la Universidad
+                            Tecnológica de la Mixteca.
+                            Me interesa el desarrollo de hardware,
+                            los sistemas digitales y la programación.
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3>Mis intereses</h3>
+
+                        <p>
+                            Diseño de procesadores, sistemas
+                            embebidos, microcontroladores,
+                            FPGA y herramientas de desarrollo
+                            en Linux.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================
+             Materias
+             ==================================================== -->
+
+        <section id="materias" class="section alternate">
+            <div class="container">
+                <p class="eyebrow">
+                    FORMACIÓN ACADÉMICA
+                </p>
+
+                <h2 class="section-title">
+                    Materias
+                </h2>
+
+                <p class="section-description">
+                    Asignaturas que curso actualmente en
+                    Ingeniería en Electrónica, con sus
+                    prácticas y proyectos.
+                </p>
+
+                <div class="card-grid subject-grid">
+
+                    <!-- Redes de Computadoras -->
+
+                    <article class="card subject-card">
+                        <span class="card-number">01</span>
+
+                        <h3>Redes de Computadoras</h3>
+
+                        <p>
+                            Redes, protocolos y comunicación
+                            entre sistemas.
+                        </p>
+
+                        <a class="project-link"
+                           href="materias.html#redes">
+                            Ver materia →
+                        </a>
+                    </article>
+
+                    <!-- Microcontroladores Avanzados -->
+
+                    <article class="card subject-card">
+                        <span class="card-number">02</span>
+
+                        <h3>Microcontroladores Avanzados</h3>
+
+                        <p>
+                            Programación de microcontroladores
+                            y sistemas embebidos.
+                        </p>
+
+                        <a class="project-link"
+                           href="materias.html#microcontroladores">
+                            Ver materia →
+                        </a>
+                    </article>
+
+                    <!-- Procesamiento de Señales -->
+
+                    <article class="card subject-card">
+                        <span class="card-number">03</span>
+
+                        <h3>Procesamiento de Señales</h3>
+
+                        <p>
+                            Análisis y procesamiento
+                            de señales digitales.
+                        </p>
+
+                        <a class="project-link"
+                           href="materias.html#senales">
+                            Ver materia →
+                        </a>
+                    </article>
+
+                    <!-- Máquinas Eléctricas -->
+
+                    <article class="card subject-card">
+                        <span class="card-number">04</span>
+
+                        <h3>Máquinas Eléctricas</h3>
+
+                        <p>
+                            Estudio y funcionamiento
+                            de motores y generadores eléctricos.
+                        </p>
+
+                        <a class="project-link"
+                           href="materias.html#maquinas">
+                            Ver materia →
+                        </a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================
+             Proyectos
+             ==================================================== -->
+
+        <section id="proyectos" class="section">
+            <div class="container">
+                <p class="eyebrow">
+                    HARDWARE Y SOFTWARE
+                </p>
+
+                <h2 class="section-title">
+                    Proyectos
+                </h2>
+
+                <p class="section-description">
+                    Repositorios de desarrollo electrónico,
+                    programación y herramientas personales.
+                </p>
+
+                <div class="card-grid">
+
+                    <!-- RV32I -->
+
+                    <article class="card project-card">
+                        <div class="project-art">
+                            RV32I
+                        </div>
+
+                        <div class="project-content">
+                            <h3>Procesador RISC-V</h3>
+
+                            <p>
+                                Diseño y desarrollo de un
+                                procesador basado en la
+                                arquitectura RV32I.
+                            </p>
+
+                            <span class="card-tag">
+                                FPGA / CPU
+                            </span>
+
+                            <p>
+                                <a class="project-link"
+                                   href="https://github.com/Sudo-Guts/RV32I-Monocilo"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Ver repositorio ↗
+                                </a>
+                            </p>
+                        </div>
+                    </article>
+
+                    <!-- SPWM -->
+
+                    <article class="card project-card">
+                        <div class="project-art">
+                            SPWM
+                        </div>
+
+                        <div class="project-content">
+                            <h3>SPWM</h3>
+
+                            <p>
+                                Proyecto relacionado con la
+                                generación de modulación
+                                por ancho de pulso senoidal.
+                            </p>
+
+                            <span class="card-tag">
+                                Electrónica
+                            </span>
+
+                            <p>
+                                <a class="project-link"
+                                   href="https://github.com/Sudo-Guts/SPWM"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Ver repositorio ↗
+                                </a>
+                            </p>
+                        </div>
+                    </article>
+
+                    <!-- Seguidor de Línea -->
+
+                    <article class="card project-card">
+                        <div class="project-art">
+                            AVR
+                        </div>
+
+                        <div class="project-content">
+                            <h3>Seguidor de Línea</h3>
+
+                            <p>
+                                Robot seguidor de línea
+                                desarrollado con el
+                                microcontrolador ATmega328P.
+                            </p>
+
+                            <span class="card-tag">
+                                C / AVR
+                            </span>
+
+                            <p>
+                                <a class="project-link"
+                                   href="https://github.com/Sudo-Guts/SeguidorLinea"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Ver repositorio ↗
+                                </a>
+                            </p>
+                        </div>
+                    </article>
+
+                    <!-- Dotfiles -->
+
+                    <article class="card project-card">
+                        <div class="project-art">
+                            LINUX
+                        </div>
+
+                        <div class="project-content">
+                            <h3>Dotfiles</h3>
+
+                            <p>
+                                Configuraciones y herramientas
+                                personales para el entorno Linux.
+                            </p>
+
+                            <span class="card-tag">
+                                Linux / Neovim
+                            </span>
+
+                            <p>
+                                <a class="project-link"
+                                   href="https://github.com/Sudo-Guts/Dotfiles"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Ver repositorio ↗
+                                </a>
+                            </p>
+                        </div>
+                    </article>
+
+                    <!-- VoxID -->
+
+                    <article class="card project-card">
+                        <div class="project-art">
+                            VoxID
+                        </div>
+
+                        <div class="project-content">
+                            <h3>VoxID</h3>
+
+                            <p>
+                                Repositorio de un proyecto
+                                cuya documentación está pendiente.
+                            </p>
+
+                            <span class="card-tag">
+                                En preparación
+                            </span>
+
+                            <p>
+                                <a class="project-link"
+                                   href="https://github.com/Sudo-Guts/VoxID"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    Ver repositorio ↗
+                                </a>
+                            </p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================
+             Currículum
+             ==================================================== -->
+
+        <section id="cv" class="section alternate">
+            <div class="container">
+                <div class="feature-card">
+                    <div>
+                        <p class="eyebrow">
+                            TRAYECTORIA
+                        </p>
+
+                        <h2>Currículum vitae</h2>
+
+                        <p>
+                            Formación académica, habilidades
+                            técnicas y experiencia en proyectos.
+                            Próximamente estará disponible
+                            mi currículum en PDF.
+                        </p>
+                    </div>
+
+                    <span class="feature-icon"
+                          aria-hidden="true">
+                        CV
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================
+             Multimedia
+             ==================================================== -->
+
+        <section id="multimedia" class="section">
+            <div class="container">
+                <p class="eyebrow">
+                    CONTENIDO MULTIMEDIA
+                </p>
+
+                <h2 class="section-title">
+                    Multimedia
+                </h2>
+
+                <p class="section-description">
+                    Demostraciones de proyectos electrónicos
+                    y contenido multimedia de GutsNet.
+                </p>
+
+                <div class="about-grid">
+
+                    <!-- Videos de proyectos -->
+
+                    <div class="card multimedia-card">
+                        <h3>Videos de proyectos</h3>
+
+                        <p>
+                            Demostraciones del funcionamiento
+                            de mis proyectos electrónicos.
+                        </p>
+
+                        <video class="project-video"
+                               controls
+                               preload="metadata"
+                               playsinline>
+                            <source
+                                src="assets/video/demostracion.mp4"
+                                type="video/mp4">
+
+                            Tu navegador no admite video HTML5.
+                        </video>
+                    </div>
+
+                    <!-- Biblioteca privada -->
+
+                    <div class="card multimedia-card">
+                        <h3>GutsNet Cinema</h3>
+
+                        <p>
+                            Biblioteca multimedia privada
+                            con acceso mediante usuario
+                            y contraseña.
+                        </p>
+
+                        <span class="card-tag">
+                            Acceso en preparación
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========================================================
+         Pie de página
+         ======================================================== -->
+
+    <footer class="site-footer">
+        <div class="container footer-content">
+            <p>© 2026 GutsNet</p>
+            <p>Desarrollado con HTML, CSS y Linux.</p>
+        </div>
+    </footer>
+</body>
+</html>
+

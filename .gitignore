@@ -1,0 +1,44 @@
+# ============================================================
+# GutsNet - Git Ignore
+# ============================================================
+
+# Editor / Sistema
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Credenciales y configuraciones privadas
+.env
+.env.*
+!.env.example
+.htpasswd
+*.key
+*.pem
+
+# Archivos temporales
+*.log
+*.tmp
+*.bak
+
+# C - Archivos generados
+*.o
+*.a
+*.so
+*.elf
+*.d
+
+# Salidas de compilación
+/C0DE/sockets/out/*
+!/C0DE/sockets/out/.gitkeep
+
+# Almacenamiento privado de la web
+/C0DE/web/storage/*
+!/C0DE/web/storage/.gitkeep
+
+# Bases de datos locales
+*.sqlite
+*.sqlite3
+*.db
