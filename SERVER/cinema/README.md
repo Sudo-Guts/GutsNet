@@ -1,6 +1,6 @@
 # GutsCinema
 
-Biblioteca privada de videos de GutsNet, servida por Apache y PHP en Ubuntu.
+Biblioteca privada de videos y música de GutsNet, servida por Apache y PHP en Ubuntu.
 URL: **https://gutsnet.test/cinema/**.
 
 ## Activar en el servidor
@@ -15,12 +15,16 @@ make test-cinema
 El primer comando pide la contraseña de `sudo` y después solicita crear la
 contraseña de la cuenta **cine**. Es una cuenta de la biblioteca; no crea un
 usuario de Linux. El segundo comando pide esa contraseña y comprueba el
-catálogo y la lectura parcial de un video.
+catálogo, lectura parcial y carga/eliminación de archivos propios de prueba.
 
 El instalador:
 
 - Instala los paquetes de Apache, PHP y las herramientas necesarias.
-- Crea `/home/gutsnet-shared/peliculas` si todavía no existe.
+- Crea `/home/gutsnet-shared/peliculas` si todavía no existe y permite a Apache
+  escribir solo en esta biblioteca. El padre compartido y el área FTP conservan
+  sus permisos. `.incoming/` queda privada para recibir archivos antes de publicarlos.
+- Configura PHP para recibir un archivo de hasta **2 GiB** (2048 MiB), con margen
+  para el formulario multipart y hasta una hora para recibirlo.
 - Conserva el área de FTP, las películas existentes y el contador de visitas.
 - Reutiliza un certificado TLS existente que cubra `gutsnet.test`. Si no hay
   certificado ni llave, crea una CA local y un certificado para el nombre del
@@ -59,7 +63,37 @@ omitir la validación del certificado ni modificar la confianza global del siste
 El certificado nuevo dura un año. Si después cambia la IP, el nombre
 `gutsnet.test` sigue funcionando al actualizar su resolución local.
 
-## Agregar una película
+## Administrar desde el navegador
+
+Después de actualizar la rama, ejecuta **`make install-cinema` una vez** para
+aplicar los nuevos permisos y la configuración de carga; `make deploy` por sí
+solo actualiza el código público.
+
+1. Abre **https://gutsnet.test/cinema/** con tu cuenta habitual.
+2. En «Agrega un video o una canción», selecciona un **MP4 o MP3** y pulsa
+   **Subir archivo**. Se muestra el progreso; conserva la pestaña abierta.
+3. Cuando termine, aparecerá en la biblioteca. Los MP3 tienen reproductor de audio.
+4. Para borrar, abre **Eliminar archivo** en su tarjeta y confirma con
+   **Sí, eliminar archivo**. Esto elimina ese archivo del disco del servidor.
+
+El límite es **2 GiB por archivo**. Un nombre existente se rechaza sin reemplazarlo:
+cambia el nombre en tu dispositivo si quieres conservar ambas versiones. Si la
+conexión se interrumpe, revisa primero el catálogo antes de volver a enviar el archivo.
+El formulario y la confirmación de baja también funcionan sin JavaScript, sin barra
+de progreso.
+
+Todas las cuentas válidas de Cinema pueden reproducir, agregar y eliminar archivos.
+No hay un rol de administrador separado. Las solicitudes de cambio requieren POST
+y un token CSRF asociado a una sesión con cookie Secure, HttpOnly y SameSite=Strict.
+El servidor revisa nombre, tamaño y contenido MIME; rechaza rutas, enlaces y extensiones
+falsas. Los archivos nuevos se preparan en un área privada y se publican sin sobrescribir
+destinos. La confirmación incluye una versión del archivo para rechazar bajas de una
+tarjeta desactualizada.
+
+No se modifican los archivos de audio del portafolio ni los del área FTP. Los medios
+privados permanecen fuera de la raíz web y de Git.
+
+## Agregar un archivo desde la terminal
 
 Desde un archivo que ya esté en el servidor:
 
@@ -77,7 +111,8 @@ La importación copia el archivo a la carpeta privada con permisos de lectura
 para Apache y rechaza nombres que ya existan. No modifica la fuente.
 El catálogo se actualiza al recargar la página.
 
-Se aceptan **MP4, WebM y OGV**. El contenedor no garantiza que el códec se pueda
+La terminal y el catálogo admiten **MP4, MP3, WebM y OGV**. El formulario web
+acepta **MP4 y MP3**. El contenedor no garantiza que el códec se pueda
 reproducir en cada navegador; el servidor entrega el archivo original, sin
 transcodificarlo. Los videos privados no se guardan en `C0DE/web/public`, en
 `/var/www/gutsnet/public` ni en Git.
@@ -104,7 +139,7 @@ incluye un botón de cierre de sesión que prometa eliminar esas credenciales.
 
 ```bash
 make check-cinema  # configuración, certificado, permisos y acceso sin cuenta
-make test-cinema   # cuenta válida, catálogo PHP y reproducción parcial
+make test-cinema   # cuenta, reproducción y carga/baja de archivos propios de prueba
 make test-web      # web pública, multimedia y contador
 ```
 
@@ -115,6 +150,14 @@ Resultados previstos:
 | HTTP `/cinema/` | 302 a HTTPS |
 | HTTPS `/cinema`, catálogo o video sin cuenta | 401 |
 | Catálogo con cuenta correcta | 200 y PHP ejecutado |
+| Gestión sin cuenta | 401 |
+| GET autenticado a `/cinema/manage.php` | 405 |
+| Gestión sin token CSRF válido | 403 |
+| Carga válida de MP4 o MP3 | 201 |
+| Nombre de archivo duplicado | 409, archivo anterior intacto |
+| Extensión o contenido no admitidos | 415 |
+| Baja de archivo cambiado desde la consulta | 409 |
+| Baja válida | 200 (JSON) o 303 (formulario HTML) |
 | Video con cuenta y `Range: bytes=0-15` | 206 y 16 bytes |
 | Archivo PHP en la carpeta de películas | 403 |
 | Symlink o ruta con información adicional | 403 o 404 |
@@ -132,9 +175,13 @@ sudo tail -n 50 /var/log/apache2/gutsnet_ssl_error.log
 ```
 
 GitHub Actions instala el servicio en un Ubuntu aislado, comprueba autenticación,
-HTTPS, Range, reinstalación y rechazo de archivos ajenos a la biblioteca.
+HTTPS, Range, reinstalación, carga/baja de MP4 y MP3, CSRF, nombres duplicados y
+rechazo de archivos ajenos a la biblioteca. Las pruebas de gestión usan nombres
+aleatorios y solo eliminan los archivos creados por esas mismas pruebas.
 El resultado de CI no confirma por sí solo la activación del equipo del usuario.
 
 Referencias: [autenticación de Apache](https://httpd.apache.org/docs/2.4/howto/auth.html),
 [htpasswd](https://httpd.apache.org/docs/2.4/programs/htpasswd.html) y
-[secciones de configuración](https://httpd.apache.org/docs/2.4/sections.html).
+[secciones de configuración](https://httpd.apache.org/docs/2.4/sections.html),
+[carga de archivos en PHP](https://www.php.net/manual/en/features.file-upload.post-method.php)
+y [move_uploaded_file](https://www.php.net/manual/en/function.move-uploaded-file.php).

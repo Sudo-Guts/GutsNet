@@ -19,6 +19,9 @@ mode="$(stat -c '%a' "$auth")"
 (( (8#$mode & 0007) == 0 )) || fail 'El archivo de cuentas permite acceso a otros usuarios.'
 runuser -u www-data -- test -r "$auth" || fail 'Apache no puede leer las cuentas.'
 runuser -u www-data -- test -r "$storage" && runuser -u www-data -- test -x "$storage" || fail 'Apache no puede leer las peliculas.'
+runuser -u www-data -- test -w "$storage" || fail 'Apache no puede agregar ni eliminar archivos de Cinema.'
+[[ -d "$storage/.incoming" && ! -L "$storage/.incoming" ]] || fail 'Falta el area privada de carga.'
+runuser -u www-data -- test -w "$storage/.incoming" || fail 'Apache no puede recibir archivos de Cinema.'
 apache2ctl configtest
 openssl x509 -in "$cert" -noout -checkend 86400 >/dev/null || fail 'El certificado vence pronto o esta vencido.'
 openssl x509 -in "$cert" -noout -checkhost gutsnet.test >/dev/null || fail 'El certificado no cubre gutsnet.test.'
@@ -35,7 +38,7 @@ headers="$(< "$tmp/http.headers")"
 [[ "${headers,,}" == *'location: https://gutsnet.test/cinema/'* ]] || fail 'La redireccion no apunta a HTTPS.'
 ok 'HTTP redirige Cinema a HTTPS'
 
-for path in /cinema /cinema/ /cinema/media/Prueba_GutsCinema.mp4; do
+for path in /cinema /cinema/ /cinema/manage.php /cinema/media/Prueba_GutsCinema.mp4 /cinema/media/prueba.mp3; do
     code="$(curl --noproxy '*' --silent --show-error --max-time 15 \
         --cacert "$trust" --resolve gutsnet.test:443:127.0.0.1 \
         -D "$tmp/auth.headers" -o /dev/null -w '%{http_code}' "https://gutsnet.test$path")"

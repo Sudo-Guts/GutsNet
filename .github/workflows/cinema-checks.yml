@@ -7,6 +7,7 @@ on:
       - 'SERVER/apache/**'
       - 'C0DE/web/public/**'
       - 'scripts/version-web-assets.py'
+      - 'scripts/test-cinema-ui.cjs'
       - 'Makefile'
       - '.github/workflows/cinema-checks.yml'
   push:
@@ -16,6 +17,7 @@ on:
       - 'SERVER/apache/**'
       - 'C0DE/web/public/**'
       - 'scripts/version-web-assets.py'
+      - 'scripts/test-cinema-ui.cjs'
       - 'Makefile'
       - '.github/workflows/cinema-checks.yml'
 
@@ -30,7 +32,8 @@ jobs:
           bash -n SERVER/cinema/check.sh
           bash -n SERVER/cinema/test.sh
           bash -n SERVER/cinema/add.sh
-          php -l C0DE/web/public/cinema/index.php
+          for file in C0DE/web/public/cinema/*.php; do php -l "$file"; done
+          python3 -m py_compile SERVER/cinema/test-management.py
           node --check C0DE/web/public/assets/js/cinema.js
           node scripts/test-cinema-ui.cjs
           python3 scripts/version-web-assets.py --check

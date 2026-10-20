@@ -72,4 +72,6 @@ code="$(request --range 0-15 -D "$tmp/range.headers" -o "$tmp/range.bin" \
 headers="$(< "$tmp/range.headers")"
 [[ "${headers,,}" == *'content-range: bytes 0-15/'* ]] || fail 'Falta Content-Range en la respuesta.'
 ok 'Reproduccion y desplazamiento: solicitudes Range (HTTP 206)'
+here="$(cd -- "$(dirname -- "$0")" && pwd)"
+printf '%s\n' "$password" | python3 "$here/test-management.py" --user "$account" --ca "$trust"
 printf 'Pruebas de GutsCinema completadas.\n'

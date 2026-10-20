@@ -7,6 +7,7 @@ here="$(cd -- "$(dirname -- "$0")" && pwd)"
 repo="$(cd -- "$here/../.." && pwd)"
 shared=/home/gutsnet-shared
 storage="$shared/peliculas"
+incoming="$storage/.incoming"
 auth_dir=/etc/gutsnet
 auth_file="$auth_dir/cinema.htpasswd"
 tls_dir="$auth_dir/tls"
@@ -50,14 +51,14 @@ done
 
 safe_paths() {
     local path
-    for path in "$shared" "$storage" "$auth_dir" "$auth_file" "$tls_dir" "$cert" "$key" "$ca_cert" "$ca_key" \
+    for path in "$shared" "$storage" "$incoming" "$incoming/.lock" "$auth_dir" "$auth_file" "$tls_dir" "$cert" "$key" "$ca_cert" "$ca_key" \
         /var/www/gutsnet /var/www/gutsnet/public /var/lib/gutsnet; do
         [[ ! -L "$path" ]] || fail "No se permite un enlace simbolico en $path"
     done
-    for path in "$shared" "$storage" "$auth_dir" "$tls_dir"; do
+    for path in "$shared" "$storage" "$incoming" "$auth_dir" "$tls_dir"; do
         [[ ! -e "$path" || -d "$path" ]] || fail "$path no es un directorio"
     done
-    for path in "$auth_file" "$cert" "$key" "$ca_cert" "$ca_key"; do
+    for path in "$auth_file" "$cert" "$key" "$ca_cert" "$ca_key" "$incoming/.lock"; do
         [[ ! -e "$path" || -f "$path" ]] || fail "$path no es un archivo regular"
     done
     [[ -f "$repo/SERVER/apache/gutsnet.conf" && -f "$repo/SERVER/apache/gutsnet-ssl.conf" ]] || fail 'Faltan VirtualHosts de GutsNet.'
@@ -89,11 +90,17 @@ for command in apache2ctl a2enmod a2ensite htpasswd openssl php rsync python3 cu
 done
 getent passwd www-data >/dev/null || fail 'No existe la cuenta de Apache www-data.'
 python3 "$repo/scripts/version-web-assets.py" --check
-php -l "$repo/C0DE/web/public/cinema/index.php"
+for file in "$repo"/C0DE/web/public/cinema/*.php; do php -l "$file"; done
+php -r 'exit(PHP_INT_SIZE >= 8 && extension_loaded("fileinfo") && extension_loaded("session") ? 0 : 1);' \
+    || fail 'Cinema necesita PHP de 64 bits con Fileinfo y Session.'
 
 # No se cambia la propiedad del padre compartido ni del area de FTP.
 [[ -d "$shared" ]] || install -d -o root -g root -m 755 "$shared"
-[[ -d "$storage" ]] || install -d -o root -g www-data -m 750 "$storage"
+[[ -d "$storage" ]] || install -d -o root -g www-data -m 770 "$storage"
+# La escritura se limita a esta biblioteca dedicada, fuera de la raiz web.
+chown root:www-data "$storage"
+chmod 0770 "$storage"
+install -d -o www-data -g www-data -m 700 "$incoming"
 runuser -u www-data -- test -r "$storage" && runuser -u www-data -- test -x "$storage" \
     || fail "Apache no puede leer/recorrer $storage. Revisa sus permisos sin alterar el area de FTP."
 install -d -o root -g www-data -m 750 "$auth_dir"
@@ -211,4 +218,5 @@ else
     info "Se usa tu certificado TLS existente: $cert"
 fi
 info 'Prueba completa: make test-cinema'
-info 'Para agregar videos: sudo bash SERVER/cinema/add.sh /ruta/a/pelicula.mp4'
+info 'Agrega MP4 y MP3 desde el formulario de la biblioteca (hasta 2 GiB).'
+info 'Tambien puedes importar: sudo bash SERVER/cinema/add.sh /ruta/a/archivo.mp4'

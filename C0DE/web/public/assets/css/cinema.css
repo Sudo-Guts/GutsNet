@@ -32,3 +32,45 @@
     #cinema-count { margin-bottom: 0; }
     .cinema-grid { grid-template-columns: 1fr; }
 }
+
+/* Gestion de la coleccion: carga progresiva y confirmacion sin depender de JS. */
+.cinema-upload-panel { margin-bottom: 38px; padding: 27px; border: 1px solid #ddd7ee; border-radius: 16px; background: #fbfaff; }
+.cinema-upload-panel .eyebrow { margin: 0 0 10px; font-size: .65rem; }
+.cinema-upload-panel h2 { margin: 0 0 9px; font-size: 1.25rem; letter-spacing: -.025em; }
+.cinema-upload-panel > div > p:last-child { margin: 0; color: #665973; font-size: .83rem; }
+.cinema-upload-fields { display: flex; gap: 20px; align-items: end; margin-top: 22px; }
+.cinema-file-field { flex: 1; min-width: 0; }
+.cinema-file-field label { display: block; margin-bottom: 8px; font-size: .8rem; color: #51445e; }
+.cinema-file-field input { display: block; width: 100%; min-width: 0; min-height: 46px; padding: 7px; border: 1px solid #ddd3ed; border-radius: 9px; background: #fff; color: #51445e; font: inherit; font-size: .8rem; }
+.cinema-file-field input::file-selector-button { margin-right: 10px; padding: 7px 10px; border: 0; border-radius: 5px; background: #f0ebfa; color: #51416a; font: inherit; cursor: pointer; }
+.cinema-upload-button { display: flex; align-items: center; justify-content: center; gap: 20px; min-height: 46px; padding: 11px 19px; border: 1px solid #655094; border-radius: 9px; background: #655094; color: #fff; font: inherit; font-size: .84rem; font-weight: 600; cursor: pointer; }
+.cinema-upload-button:hover { background: #55417f; }
+.cinema-upload-button:disabled, .cinema-file-field input:disabled { cursor: wait; opacity: .65; }
+.cinema-upload-progress { margin-top: 20px; }
+.cinema-upload-progress label { display: block; margin-bottom: 7px; font-size: .78rem; color: #51445e; }
+.cinema-upload-progress progress { display: block; width: 100%; height: 10px; accent-color: #655094; }
+.cinema-upload-status { margin: 10px 0 0; color: #51445e; font-size: .82rem; overflow-wrap: anywhere; }
+.cinema-upload-status:empty { display: none; }
+.cinema-upload-status.is-error { color: #92393c; }
+.cinema-upload-hint { font-size: .8rem; color: #665973; }
+.cinema-notice { margin: 0 0 24px; padding: 15px 18px; border: 1px solid #ddd3ed; border-radius: 10px; background: #f8f5fc; color: #51445e; font-size: .85rem; overflow-wrap: anywhere; }
+.cinema-notice-success { border-color: #cadfd4; background: #eff7f2; color: #315c48; }
+.cinema-notice-error { border-color: #e8c9cc; background: #fff4f4; color: #92393c; }
+.cinema-upload-panel > .cinema-notice { margin: 20px 0 0; }
+.cinema-audio { display: flex; flex-direction: column; align-items: center; justify-content: end; gap: 13px; min-height: 195px; padding: 24px 16px 20px; border-bottom: 1px solid #eae2f3; background: linear-gradient(130deg, #f3effc, #edf4fc); }
+.cinema-audio-symbol { color: #655094; font-size: 2.8rem; line-height: 1; }
+.cinema-audio-label { color: #625177; font-size: .6rem; letter-spacing: .15em; }
+.cinema-audio audio { display: block; width: 100%; max-width: 100%; height: 40px; }
+.cinema-movie-info { padding-bottom: 9px; }
+.cinema-file-meta { display: flex; gap: 12px; padding: 0 20px 18px; color: #665973; font-size: .73rem; }
+.cinema-delete { margin: 0 20px 18px; border-top: 1px solid #eee8f3; }
+.cinema-delete summary { width: fit-content; padding-top: 13px; color: #8a444e; font-size: .78rem; cursor: pointer; }
+.cinema-delete-confirm { margin-top: 10px; padding: 13px; border: 1px solid #efd7da; border-radius: 8px; background: #fff7f7; }
+.cinema-delete-confirm p { margin: 0 0 12px; color: #683b43; font-size: .78rem; line-height: 1.6; overflow-wrap: anywhere; }
+.cinema-delete-button { min-height: 42px; padding: 9px 12px; border: 1px solid #923d4b; border-radius: 7px; background: #923d4b; color: #fff; font: inherit; font-size: .77rem; cursor: pointer; }
+.cinema-delete-button:hover { background: #7b303c; }
+.cinema-delete-confirm .cinema-delete-cancel { margin: 12px 0 0; font-size: .72rem; }
+@media (max-width: 620px) {
+    .cinema-upload-panel { padding: 20px; }
+    .cinema-upload-fields { align-items: stretch; flex-direction: column; gap: 15px; }
+}
