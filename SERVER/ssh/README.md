@@ -24,6 +24,8 @@ El servidor necesita OpenSSH activo, GCC con soporte de enlace estático,
 binutils y util-linux. El instalador revisa los requisitos antes de modificar
 SSH. Prepara el grupo `gutsnet-files` y el área de intercambio si faltan; no es
 necesario configurar FTPS primero.
+Instala `acl` si falta y corrige la ACL de grupo y su herencia en el intercambio,
+conservando las entradas con nombre y los archivos existentes.
 
 ## Conectarse desde el mismo Ubuntu
 

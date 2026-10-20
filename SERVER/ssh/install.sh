@@ -19,6 +19,7 @@ preflight() {
     [[ -x /usr/sbin/sshd && -f "$SSHD" ]] || die "OpenSSH Server no instalado."
     command -v cc >/dev/null || die "Falta GCC."
     command -v readelf >/dev/null || die "Falta binutils."
+    command -v setfacl >/dev/null || die "Falta acl. Instala con sudo apt-get install acl."
     for p in /home/gutsnet-shared /home/gutsnet-shared/ftp "$SHARED"; do
         [[ ! -L "$p" && ( ! -e "$p" || -d "$p" ) ]] || die "Ruta compartida insegura: $p"
     done
@@ -57,6 +58,13 @@ preflight() {
 }
 
 install_jail() {
+    [[ "$EUID" == 0 ]] || die "Usa sudo."
+    if ! command -v setfacl >/dev/null; then
+        command -v apt-get >/dev/null || die "Falta acl (setfacl)."
+        log "Instalando acl para los permisos compartidos"
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y acl
+    fi
     preflight
     systemctl is-active --quiet ssh || die "ssh.service no esta activo: no modificar."
     binary="$(mktemp /tmp/gutsnet-shell.XXXXXX)"
@@ -74,6 +82,10 @@ install_jail() {
         [[ -d "$p" ]] || install -d -o root -g root -m 755 "$p"
     done
     [[ -d "$SHARED" ]] || install -d -o root -g "$GROUP" -m 2770 "$SHARED"
+    # Con ACL extendidas, chmod modifica la mascara, no group::. Ajustar ambos
+    # evita un 2770 aparente cuyo grupo real solo conserva lectura/recorrido.
+    setfacl -m u::rwx,g::rwx,m::rwx,o::--- "$SHARED"
+    setfacl -m d:u::rwx,d:g::rwx,d:m::rwx,d:o::--- "$SHARED"
     chmod 2770 "$SHARED"
 
     install -d -o root -g root -m 755 "$JAIL" "$JAIL/usr" \

@@ -35,8 +35,11 @@ jobs:
       - name: Instalar y comprobar OpenSSH
         run: |
           sudo apt-get -qq update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server sshpass
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server sshpass acl
           sudo systemctl start ssh
+          # Reproducir ACL heredadas con group::r-x y mascara rwx.
+          sudo install -d -o root -g root -m 755 /home/gutsnet-shared
+          sudo setfacl -m "d:u::rwx,d:u:$(id -u):rwx,d:g::r-x,d:m::rwx,d:o::r-x" /home/gutsnet-shared
           sudo bash SERVER/ssh/install.sh --install
           sudo bash SERVER/ssh/check.sh
       - name: Probar sesiones SSH y SFTP reales por loopback
