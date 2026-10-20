@@ -86,7 +86,8 @@ document.addEventListener("DOMContentLoaded", () => {
             progress.value = 0;
             progressBox.hidden = false;
             const request = new XMLHttpRequest();
-            request.open("POST", upload.action);
+            // El input name="action" oculta upload.action en los navegadores.
+            request.open("POST", upload.getAttribute("action"));
             request.setRequestHeader("Accept", "application/json");
             request.upload.addEventListener("progress", (update) => {
                 if (update.lengthComputable) {

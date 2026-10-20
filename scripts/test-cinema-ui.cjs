@@ -13,6 +13,7 @@ function element(title = "") {
         classList: { add: (name) => classes.add(name), remove: (name) => classes.delete(name),
             contains: (name) => classes.has(name) },
         addEventListener(name, fn) { this.events[name] = fn; },
+        getAttribute(name) { return this.attributes[name] ?? null; },
         setAttribute(name, value) { this.attributes[name] = value; },
         removeAttribute(name) { delete this.attributes[name]; },
         focus() { this.focused = true; }, pause() { this.paused = true; }
@@ -24,7 +25,9 @@ const ids = Object.fromEntries(["cinema-search", "cinema-clear", "cinema-search-
     .map((key) => [key, element()]));
 ids["cinema-search-controls"].hidden = true;
 ids["cinema-file"].dataset.maxBytes = "2147483648";
-ids["cinema-upload"].action = "/cinema/manage.php";
+ids["cinema-upload"].setAttribute("action", "/cinema/manage.php");
+// Un control name="action" oculta la propiedad action del formulario en el DOM.
+ids["cinema-upload"].action = element();
 const movies = [element("Película de prueba"), element("Señales y sistemas")];
 const players = [element(), element()]; // video y audio
 const document = {
@@ -92,6 +95,8 @@ assert.equal(requests.length, 1);
 assert.equal(ids["cinema-upload-button"].disabled, true);
 assert.equal(ids["cinema-upload-progress"].hidden, false);
 assert.equal(requests[0].method, "POST");
+assert.equal(requests[0].url, "/cinema/manage.php",
+    "La URL debe salir del atributo del formulario, aunque exista un input action");
 assert.equal(requests[0].accept, "application/json");
 submit("Pelicula.MP4", 100);
 assert.equal(requests.length, 1, "No repite una carga mientras esta en curso");

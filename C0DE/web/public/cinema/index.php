@@ -33,7 +33,7 @@ if (!$storageAvailable) {
     <link rel="icon" href="../assets/img/favicon.svg?v=2ca871dd7910" type="image/svg+xml">
     <link rel="stylesheet" href="../assets/css/style.css?v=8bddbe37b28e">
     <link rel="stylesheet" href="../assets/css/cinema.css?v=0af8a53b21ae">
-    <script src="../assets/js/cinema.js?v=677678e44f85" defer></script>
+    <script src="../assets/js/cinema.js?v=8c39a7ff2914" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#contenido">Ir al contenido</a>

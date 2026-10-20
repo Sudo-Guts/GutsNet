@@ -8,6 +8,7 @@ on:
       - 'C0DE/web/public/**'
       - 'scripts/version-web-assets.py'
       - 'scripts/test-cinema-ui.cjs'
+      - 'scripts/test-cinema-browser.cjs'
       - 'Makefile'
       - '.github/workflows/cinema-checks.yml'
   push:
@@ -18,6 +19,7 @@ on:
       - 'C0DE/web/public/**'
       - 'scripts/version-web-assets.py'
       - 'scripts/test-cinema-ui.cjs'
+      - 'scripts/test-cinema-browser.cjs'
       - 'Makefile'
       - '.github/workflows/cinema-checks.yml'
 
@@ -37,7 +39,12 @@ jobs:
           python3 -m py_compile SERVER/cinema/test-redirects.py
           node --check C0DE/web/public/assets/js/cinema.js
           node scripts/test-cinema-ui.cjs
+          node --check scripts/test-cinema-browser.cjs
           python3 scripts/version-web-assets.py --check
+      - name: Instalar Chromium para probar el formulario real
+        run: |
+          npm install --prefix "$RUNNER_TEMP/cinema-browser" --no-save playwright@1.56.1
+          "$RUNNER_TEMP/cinema-browser/node_modules/.bin/playwright" install --with-deps chromium
       - name: Verificar escritura en la biblioteca dedicada
         run: |
           sudo install -d -o www-data -g www-data -m 770 /home/gutsnet-shared/peliculas
@@ -58,7 +65,7 @@ jobs:
       - name: Reproducir proteccion de home en Apache reciente
         run: |
           sudo install -d -o root -g root -m 755 /etc/systemd/system/apache2.service.d
-          printf '[Service]\nProtectHome=read-only\n' | \
+          printf '[Service]\nProtectHome=read-only\nMemoryDenyWriteExecute=yes\n' | \
             sudo tee /etc/systemd/system/apache2.service.d/90-cinema-home-test.conf >/dev/null
           sudo systemctl daemon-reload
       - name: Instalar y probar GutsCinema
@@ -73,6 +80,10 @@ jobs:
           # Sin DNS local: TLS, cookies Secure, Range y gestion por IP literal.
           cinema_ip="$(hostname -I | awk '{print $1}')"
           printf '%s\n' "$cinema_password" | bash SERVER/cinema/test.sh --password-stdin --host "$cinema_ip"
+          printf '%s\n' "$cinema_password" | \
+            NODE_PATH="$RUNNER_TEMP/cinema-browser/node_modules" \
+            CINEMA_BROWSER_URL="https://$cinema_ip/cinema/" node scripts/test-cinema-browser.cjs
+          ! sudo grep -q 'Allocation of JIT memory failed' /var/log/apache2/gutsnet_ssl_error.log
           sudo bash SERVER/cinema/add.sh C0DE/web/public/assets/video/demostracion.mp4 \
             'Pelicula_<b>&"demo".mp4'
 

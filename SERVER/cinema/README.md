@@ -233,10 +233,24 @@ sudo journalctl -u apache2 -n 50 --no-pager
 sudo tail -n 50 /var/log/apache2/gutsnet_ssl_error.log
 ```
 
+Si el registro de acceso muestra `POST /cinema/[object%20HTMLInputElement]` con
+HTTP 404, el navegador está usando un JavaScript anterior. El campo oculto
+`name="action"` del formulario puede ocultar su propiedad `action`; la carga lee
+ahora el atributo con `getAttribute("action")` para enviar a `/cinema/manage.php`.
+Actualiza la rama, ejecuta `make install-cinema` y recarga la página. Los recursos
+se versionan para que el navegador solicite el JavaScript corregido.
+
+Cinema desactiva únicamente el JIT de PCRE en su configuración PHP para funcionar
+con `MemoryDenyWriteExecute` activo. Esto evita los avisos de asignación de memoria
+ejecutable que aparecen con las restricciones recientes del servicio de Apache.
+
 GitHub Actions instala el servicio en un Ubuntu aislado, comprueba autenticación,
 HTTPS, Range, reinstalación, carga/baja de MP4 y MP3, CSRF, nombres duplicados y
 rechazo de archivos ajenos a la biblioteca. Las pruebas de gestión usan nombres
 aleatorios y solo eliminan los archivos creados por esas mismas pruebas.
+También usa Chromium con el formulario real para subir MP4 y MP3 mediante JavaScript,
+comprobar Range y eliminarlos mediante el formulario. Esto cubre el acceso a los
+controles por nombre del DOM que no reproducía la simulación de la interfaz.
 El resultado de CI no confirma por sí solo la activación del equipo del usuario.
 
 Referencias: [autenticación de Apache](https://httpd.apache.org/docs/2.4/howto/auth.html),
