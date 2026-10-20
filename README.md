@@ -31,7 +31,6 @@ operativa se realiza desde Ubuntu mediante `make test-web`.
 - Activar GutsCinema en el Ubuntu del usuario mediante `make install-cinema`; el instalador y las pruebas están disponibles en el repositorio.
 - Servicio FTP con directorio compartido.
 - Usuario SSH restringido mediante chroot (el acceso administrador ya fue probado).
-- Clientes y servidores en C: Echo RFC 862 y Daytime RFC 867 (TCP y UDP).
 - Capturas de tráfico y pruebas finales con Wireshark.
 
 ## Estructura
@@ -78,6 +77,22 @@ make test-cinema     # prueba la cuenta y la reproducción parcial
 Para importar videos, configurar la confianza HTTPS y acceder desde otros
 equipos, consulta [SERVER/cinema/README.md](SERVER/cinema/README.md).
 La existencia del instalador no implica que ya esté activo en tu Ubuntu.
+
+## Clientes Echo y Daytime hacia servidores externos
+
+Desde la raíz del repositorio:
+
+```bash
+make -C C0DE/sockets echo-remoto MESSAGE="Hola desde GutsNet"
+make -C C0DE/sockets hora-remota
+```
+
+Echo consulta `tcpbin.com:4242` y Daytime consulta `time.nist.gov:13`,
+ambos por TCP. Los comandos compilan su cliente y limitan la consulta completa
+a 10 segundos. El host, el puerto, el mensaje y ese límite son configurables.
+
+Para elegir otros destinos, usar UDP, capturar tráfico y ejecutar las pruebas,
+consulta [SERVER/sockets/README.md](SERVER/sockets/README.md).
 
 ## Pruebas
 

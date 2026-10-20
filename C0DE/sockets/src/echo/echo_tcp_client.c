@@ -1,7 +1,7 @@
 /*
  * GutsNet - Echo TCP client (RFC 862)
  * Usage: echo_tcp_client <host> <port> <message>
- * Receives and prints bytes returned by the Echo server.
+ * Verifies and prints the returned bytes, without waiting for server closure.
  */
 #define _POSIX_C_SOURCE 200809L
 
@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #define BUFFER_SIZE 4096
@@ -91,6 +92,14 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    struct timeval timeout = {.tv_sec = 5, .tv_usec = 0};
+    if (setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) != 0 ||
+        setsockopt(client_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) != 0) {
+        perror("setsockopt");
+        close(client_fd);
+        return EXIT_FAILURE;
+    }
+
     const unsigned char *message = (const unsigned char *)argv[3];
     size_t message_size = strlen(argv[3]);
     if (send_all(client_fd, message, message_size) != 0) {
@@ -107,10 +116,16 @@ int main(int argc, char *argv[])
     }
 
     unsigned char buffer[BUFFER_SIZE];
-    for (;;) {
-        ssize_t received = recv(client_fd, buffer, sizeof(buffer), 0);
+    size_t echoed = 0;
+    while (echoed < message_size) {
+        size_t pending = message_size - echoed;
+        size_t capacity = pending < sizeof(buffer) ? pending : sizeof(buffer);
+        ssize_t received = recv(client_fd, buffer, capacity, 0);
         if (received == 0) {
-            break;
+            fprintf(stderr, "ERROR: eco incompleto (%zu de %zu bytes)\n",
+                    echoed, message_size);
+            close(client_fd);
+            return EXIT_FAILURE;
         }
         if (received < 0) {
             if (errno == EINTR) {
@@ -120,11 +135,17 @@ int main(int argc, char *argv[])
             close(client_fd);
             return EXIT_FAILURE;
         }
+        if (memcmp(buffer, message + echoed, (size_t)received) != 0) {
+            fprintf(stderr, "ERROR: el eco recibido no coincide con el mensaje enviado\n");
+            close(client_fd);
+            return EXIT_FAILURE;
+        }
         if (write_all(STDOUT_FILENO, buffer, (size_t)received) != 0) {
             perror("write");
             close(client_fd);
             return EXIT_FAILURE;
         }
+        echoed += (size_t)received;
     }
 
     close(client_fd);

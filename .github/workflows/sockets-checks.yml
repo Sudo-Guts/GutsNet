@@ -30,6 +30,9 @@ jobs:
         run: |
           make -C C0DE/sockets
 
+      - name: Probar clientes y seleccion de servidores remotos sin Internet
+        run: make -C C0DE/sockets test
+
       - name: Validar unidad systemd
         run: |
           python3 - <<'PY'
