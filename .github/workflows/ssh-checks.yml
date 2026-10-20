@@ -1,0 +1,37 @@
+name: Validacion de SSH Jail
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "SERVER/ssh/**"
+      - ".github/workflows/ssh-checks.yml"
+  pull_request:
+    paths:
+      - "SERVER/ssh/**"
+      - ".github/workflows/ssh-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  jail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Revisar sintaxis del instalador
+        run: |
+          bash -n SERVER/ssh/install.sh
+          bash -n SERVER/ssh/check.sh
+      - name: Compilar y probar shell estatica
+        run: |
+          make -C SERVER/ssh test
+      - name: Probar shell dentro de chroot
+        run: |
+          sudo mkdir -p /tmp/gutsnet-ci-jail/usr/local/bin /tmp/gutsnet-ci-jail/compartido
+          sudo cp SERVER/ssh/out/gutsnet-shell /tmp/gutsnet-ci-jail/usr/local/bin/gutsnet-shell
+          printf 'Hola desde chroot\n' | sudo tee /tmp/gutsnet-ci-jail/compartido/prueba.txt >/dev/null
+          sudo chroot /tmp/gutsnet-ci-jail /usr/local/bin/gutsnet-shell -c "cat prueba.txt" | grep -Fq 'Hola desde chroot'
+          result="$(sudo chroot /tmp/gutsnet-ci-jail /usr/local/bin/gutsnet-shell -c 'cd /' 2>&1)"
+          echo "$result" | grep -Fq 'Comando no permitido'
+          echo "OK: shell dentro de chroot"

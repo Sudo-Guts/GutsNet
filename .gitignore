@@ -46,3 +46,6 @@
 *.sqlite3
 *.sqlite-*
 *.db
+
+# SSH jail: ejecutable compilado localmente
+/SERVER/ssh/out/

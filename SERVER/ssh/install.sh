@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# GutsNet SSH Jail. Solo instalar cuando el servidor este disponible.
+set -Eeuo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+JAIL=/home/gutsnet-jail
+SHARED=/home/gutsnet-shared/ftp/intercambio
+GROUP=gutsnet-files
+USER_NAME=gutsjail
+SHELL_PATH=/usr/local/bin/gutsnet-shell
+SSHD=/etc/ssh/sshd_config
+
+die() { echo "ERROR: $*" >&2; exit 1; }
+log() { echo "[GutsNet SSH] $*"; }
+
+preflight() {
+    [[ "$EUID" == 0 ]] || die "Usa sudo."
+    [[ -f "$HERE/src/gutsnet_shell.c" && -f "$HERE/sshd-match.conf" ]] || die "Archivos SSH incompletos."
+    [[ -x /usr/sbin/sshd && -f "$SSHD" ]] || die "OpenSSH Server no instalado."
+    command -v cc >/dev/null || die "Falta GCC."
+    command -v readelf >/dev/null || die "Falta binutils."
+    [[ -d "$SHARED" && ! -L "$SHARED" ]] || die "Primero instala FTP y crea $SHARED."
+    getent group "$GROUP" >/dev/null || die "Falta grupo $GROUP (instala FTP primero)."
+    [[ "$(stat -c '%U:%G' /home)" == root:root ]] || die "/home no es root:root."
+    for p in "$JAIL" "$JAIL/compartido" "$JAIL/usr" "$JAIL/usr/local" "$JAIL/usr/local/bin"; do
+        [[ ! -L "$p" ]] || die "Enlace simbolico prohibido: $p"
+    done
+    if [[ -e "$JAIL" ]]; then
+        [[ -d "$JAIL" && "$(stat -c '%U:%G' "$JAIL")" == root:root ]] || die "Raiz del jail invalida."
+        mode="$(stat -c '%a' "$JAIL")"
+        (( (8#$mode & 0022) == 0 )) || die "Raiz del jail es escribible por grupo/otros."
+    fi
+    if id "$USER_NAME" >/dev/null 2>&1; then
+        [[ "$(getent passwd "$USER_NAME" | cut -d: -f6)" == /compartido ]] || die "Home de $USER_NAME inesperado."
+        [[ "$(getent passwd "$USER_NAME" | cut -d: -f7)" == "$SHELL_PATH" ]] || die "Shell de $USER_NAME inesperada."
+        for dangerous in sudo docker lxd; do
+            if id -nG "$USER_NAME" | tr ' ' '\n' | grep -qx "$dangerous"; then
+                die "Usuario $USER_NAME pertenece a grupo $dangerous."
+            fi
+        done
+    fi
+    count="$(grep -Ec '^[[:space:]]*Subsystem[[:space:]]+sftp[[:space:]]+' "$SSHD" || true)"
+    [[ "$count" == 1 ]] || die "Debe existir exactamente un Subsystem sftp activo en $SSHD."
+    shopt -s nullglob
+    for conf in /etc/ssh/sshd_config.d/*.conf; do
+        if grep -Eq '^[[:space:]]*Subsystem[[:space:]]+sftp[[:space:]]+' "$conf"; then
+            die "Hay otro Subsystem sftp en $conf; revisar manualmente."
+        fi
+    done
+}
+
+install_jail() {
+    preflight
+    systemctl is-active --quiet ssh || die "ssh.service no esta activo: no modificar."
+    binary="$(mktemp /tmp/gutsnet-shell.XXXXXX)"
+    trap 'rm -f "$binary"' EXIT
+    log "Compilando shell estatica"
+    cc -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -static \
+       "$HERE/src/gutsnet_shell.c" -o "$binary"
+    if readelf -l "$binary" | grep -q INTERP; then
+        die "El binario necesita librerias dinamicas."
+    fi
+
+    install -d -o root -g root -m 755 "$JAIL" "$JAIL/usr" \
+        "$JAIL/usr/local" "$JAIL/usr/local/bin" "$JAIL/dev"
+    if [[ ! -e "$JAIL/compartido" ]]; then
+        install -d -o root -g root -m 755 "$JAIL/compartido"
+    fi
+    if mountpoint -q "$JAIL/compartido"; then
+        origin="$(findmnt -n -o SOURCE -M "$JAIL/compartido")"
+        [[ "$origin" == *"[$SHARED]" ]] || die "Montaje existente ajeno: $origin"
+    else
+        mount --bind "$SHARED" "$JAIL/compartido"
+    fi
+    fstab_line="$SHARED $JAIL/compartido none bind,nofail 0 0"
+    if ! grep -Fqx "$fstab_line" /etc/fstab; then
+        if grep -Eq '^[^#[:space:]]+[[:space:]]+/home/gutsnet-jail/compartido[[:space:]]+' /etc/fstab; then
+            die "Existe un montaje diferente en /etc/fstab."
+        fi
+        cp -a /etc/fstab "/etc/fstab.gutsnet-backup-$(date +%Y%m%d-%H%M%S)-$$"
+        printf '\n%s\n' "$fstab_line" >> /etc/fstab
+    fi
+    for item in 'null 1 3' 'zero 1 5' 'tty 5 0' 'urandom 1 9'; do
+        read -r name major minor <<< "$item"
+        [[ ! -L "$JAIL/dev/$name" ]] || die "Dispositivo inseguro: $name"
+        if [[ ! -e "$JAIL/dev/$name" ]]; then
+            mknod -m 666 "$JAIL/dev/$name" c "$major" "$minor"
+        fi
+    done
+
+    install -o root -g root -m 755 "$binary" "$SHELL_PATH"
+    install -o root -g root -m 755 "$binary" "$JAIL$SHELL_PATH"
+    grep -Fqx "$SHELL_PATH" /etc/shells || printf '%s\n' "$SHELL_PATH" >> /etc/shells
+    if ! id "$USER_NAME" >/dev/null 2>&1; then
+        useradd --no-create-home --home-dir /compartido \
+            --shell "$SHELL_PATH" --user-group --groups "$GROUP" "$USER_NAME"
+    else
+        usermod -a -G "$GROUP" "$USER_NAME"
+    fi
+
+    # Respaldar antes de tocar OpenSSH. Nunca reiniciar una sesion sin validar.
+    backup="$SSHD.gutsnet-backup-$(date +%Y%m%d-%H%M%S)-$$"
+    cp -a "$SSHD" "$backup"
+    temp="$(mktemp /etc/ssh/sshd_config.gutsnet.XXXXXX)"
+    awk '/^[[:space:]]*Subsystem[[:space:]]+sftp[[:space:]]+/ {
+        print "Subsystem sftp internal-sftp"; next
+    } { print }' "$SSHD" > "$temp"
+    if ! grep -Fq '# BEGIN GUTSNET JAIL' "$temp"; then
+        printf '\n' >> "$temp"
+        cat "$HERE/sshd-match.conf" >> "$temp"
+    fi
+    chown root:root "$temp"
+    chmod 644 "$temp"
+    mv -f "$temp" "$SSHD"
+
+    valid=yes
+    /usr/sbin/sshd -t -f "$SSHD" || valid=no
+    if [[ "$valid" == yes ]]; then
+        jail_opts="$(/usr/sbin/sshd -T -C user="$USER_NAME",host=localhost,addr=127.0.0.1)" || valid=no
+        admin_opts="$(/usr/sbin/sshd -T -C user=guts,host=localhost,addr=127.0.0.1)" || valid=no
+    fi
+    if [[ "$valid" == yes ]]; then
+        grep -qx 'chrootdirectory /home/gutsnet-jail' <<< "$jail_opts" || valid=no
+        grep -qx 'disableforwarding yes' <<< "$jail_opts" || valid=no
+        grep -qx 'chrootdirectory none' <<< "$admin_opts" || valid=no
+    fi
+    if [[ "$valid" != yes ]]; then
+        cp -a "$backup" "$SSHD"
+        die "Validacion SSH fallida; configuracion restaurada: $backup"
+    fi
+    if ! systemctl reload ssh; then
+        cp -a "$backup" "$SSHD"
+        die "Recarga fallida: archivo SSH restaurado."
+    fi
+    log "SSH validado. Conserva abierta la sesion administrativa actual."
+    log "Ahora ejecuta: sudo passwd $USER_NAME"
+    log "Despues: sudo bash SERVER/ssh/check.sh"
+}
+
+if [[ "$#" != 1 ]]; then
+    echo "Uso: sudo bash SERVER/ssh/install.sh --check|--install"
+    exit 2
+fi
+case "$1" in
+    --check) preflight; log "OK: requisitos listos; sin cambios." ;;
+    --install) install_jail ;;
+    *) echo "Uso: sudo bash SERVER/ssh/install.sh --check|--install"; exit 2 ;;
+esac
