@@ -67,8 +67,13 @@ install_jail() {
         install -d -o root -g root -m 755 "$JAIL/compartido"
     fi
     if mountpoint -q "$JAIL/compartido"; then
-        origin="$(findmnt -n -o SOURCE -M "$JAIL/compartido")"
-        [[ "$origin" == *"[$SHARED]" ]] || die "Montaje existente ajeno: $origin"
+        # findmnt SOURCE puede mostrar una ruta relativa al filesystem,
+        # especialmente cuando /home esta en otra particion.
+        # Dispositivo + inodo identifican el mismo directorio de origen.
+        origin_id="$(stat -Lc '%d:%i' "$SHARED")"
+        target_id="$(stat -Lc '%d:%i' "$JAIL/compartido")"
+        [[ "$origin_id" == "$target_id" ]] ||
+            die "Montaje existente no coincide con $SHARED"
     else
         mount --bind "$SHARED" "$JAIL/compartido"
     fi

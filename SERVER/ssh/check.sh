@@ -20,8 +20,12 @@ if id -nG "$user" | tr ' ' '\n' | grep -Eq '^(sudo|docker|lxd)$'; then fail 'Tie
 mode="$(stat -c '%a' "$jail")"
 (( (8#$mode & 0022) == 0 )) || fail 'El jail es escribible por grupo/otros'
 mountpoint -q "$jail/compartido" || fail 'Carpeta compartida no montada'
-source_mount="$(findmnt -n -o SOURCE -M "$jail/compartido")"
-[[ "$source_mount" == *"[$shared]" ]] || fail "Montaje compartido inesperado: $source_mount"
+# Un bind mount sobre /home en particion propia aparece como
+# /dev/sdaN[/ruta-relativa] en findmnt; comparar inodos, no texto SOURCE.
+source_id="$(stat -Lc '%d:%i' "$shared")"
+target_id="$(stat -Lc '%d:%i' "$jail/compartido")"
+[[ "$source_id" == "$target_id" ]] ||
+    fail "Montaje compartido inesperado (origen $source_id, destino $target_id)"
 [[ -x "$binary" && -x "$jail$binary" ]] || fail 'No existe shell restringida'
 if readelf -l "$jail$binary" | grep -q INTERP; then fail 'Shell no estatica'; fi
 ok 'Cuenta restringida, shell estatica, chroot y bind mount'

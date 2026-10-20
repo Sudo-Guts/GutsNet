@@ -63,6 +63,9 @@ Match User gutsjail al final, valida sshd -t y sshd -T -C para gutsjail
 y guts y solo entonces recarga SSH. No reinicia SSH sin validar.
 
 Registra un bind mount persistente en /etc/fstab, respaldando el archivo.
+El verificador comprueba que /compartido apunta realmente al mismo directorio
+que el intercambio FTPS comparando dispositivo e inodo (funciona aunque
+/home sea otra particion).
 No cambia Apache, la biblioteca Cinema ni la propiedad de intercambio.
 
 ## Comprobar desde la computadora administradora
