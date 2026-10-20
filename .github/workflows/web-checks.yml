@@ -1,0 +1,89 @@
+name: Validación estática de la web
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Obtener repositorio
+        uses: actions/checkout@v4
+
+      - name: Comprobar sintaxis de PHP, JS y Bash
+        run: |
+          php -l C0DE/web/public/api/visitas.php
+          php -l C0DE/web/public/cinema/index.php
+          node --check C0DE/web/public/assets/js/main.js
+          bash -n scripts/test-web.sh
+
+      - name: Verificar referencias locales HTML y multimedia
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          from urllib.parse import urlsplit, unquote
+          import re
+
+          public = Path("C0DE/web/public")
+
+          class LocalLinks(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.refs = []
+
+              def handle_starttag(self, tag, attrs):
+                  for key, value in attrs:
+                      if key in {"href", "src"} and value:
+                          self.refs.append(value)
+
+          for html in (public / "index.html", public / "materias.html"):
+              parser = LocalLinks()
+              parser.feed(html.read_text(encoding="utf-8"))
+
+              for ref in parser.refs:
+                  parts = urlsplit(ref)
+                  if parts.scheme or parts.netloc or not parts.path:
+                      continue
+                  if parts.path.startswith("/"):
+                      target = public / unquote(parts.path.lstrip("/"))
+                  else:
+                      target = html.parent / unquote(parts.path)
+                  if target.is_dir():
+                      if (target / "index.html").is_file():
+                          continue
+                      if (target / "index.php").is_file():
+                          continue
+                  if not target.is_file():
+                      raise SystemExit(f"Falta recurso {ref} (origen: {html})")
+                  print(f"OK {html.name}: {ref}")
+
+          js = (public / "assets/js/main.js").read_text(encoding="utf-8")
+          for relative in re.findall(r'file:\s*["\'](/assets/audio/[^"\']+)["\']', js):
+              target = public / relative.lstrip("/")
+              if not target.is_file():
+                  raise SystemExit(f"Falta MP3: {relative}")
+              print(f"OK audio: {relative}")
+
+          mp4 = public / "assets/video/demostracion.mp4"
+          with mp4.open("rb") as handle:
+              header = handle.read(12)
+          if len(header) < 12 or header[4:8] != b"ftyp":
+              raise SystemExit("El archivo de video no tiene cabecera MP4 ftyp")
+          print("OK cabecera de contenedor MP4")
+          PY
+
+      - name: Analizar el archivo MP4
+        run: |
+          if ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get -qq update
+            sudo apt-get -qq install -y ffmpeg
+          fi
+          ffprobe -v error \
+            -show_entries format=format_name,duration \
+            -show_entries stream=codec_type,codec_name \
+            -of default=noprint_wrappers=1 \
+            C0DE/web/public/assets/video/demostracion.mp4
