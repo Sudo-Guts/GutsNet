@@ -29,7 +29,16 @@ servidor, añadir a `/etc/hosts` `127.0.0.1 gutsnet.test` si no está definido.
 En otra computadora de la red, asociar `gutsnet.test` a la dirección IP LAN
 actual del servidor mediante `/etc/hosts` o DNS local.
 
-Publicar y probar:
+La web utiliza la base de datos persistente
+`/var/lib/gutsnet/visitas.sqlite`. Antes de probar el contador, crear el
+directorio **fuera de la web** y hacerlo escribible para Apache:
+
+```bash
+sudo install -d -o www-data -g www-data -m 750 /var/lib/gutsnet
+```
+
+Si la base ya existe, no borrar ni sustituir el archivo; verificar primero
+sus permisos. Publicar y probar:
 
 ```bash
 make preview
@@ -37,17 +46,6 @@ make deploy
 make test
 make test-web
 ```
-
-La web utiliza la base de datos persistente
-`/var/lib/gutsnet/visitas.sqlite`. Crear el directorio **fuera de la web**
-y hacerlo escribible para el proceso de Apache:
-
-```bash
-sudo install -d -o www-data -g www-data -m 750 /var/lib/gutsnet
-```
-
-Si la base ya existe, no borrar ni sustituir el archivo. Verificar sus
-permisos antes de modificarla. Luego repetir `make test-web`.
 
 ## 2. GutsNet Cinema: contenido privado
 
