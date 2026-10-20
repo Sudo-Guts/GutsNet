@@ -10,9 +10,12 @@ set -Eeuo pipefail
 BASE_URL="${GUTSNET_URL:-http://127.0.0.1}"
 HOST="${GUTSNET_HOST:-gutsnet.test}"
 BASE_URL="${BASE_URL%/}"
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+PUBLIC_DIR="$REPO_ROOT/C0DE/web/public"
 
 command -v curl >/dev/null || { echo "ERROR: falta curl" >&2; exit 1; }
 command -v php >/dev/null || { echo "ERROR: falta php-cli" >&2; exit 1; }
+command -v cmp >/dev/null || { echo "ERROR: falta cmp" >&2; exit 1; }
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -24,6 +27,23 @@ fail() {
 
 ok() {
     printf 'OK: %s\n' "$*"
+}
+
+check_deployed_copy() {
+    local local_file="$1" downloaded_file="$2"
+    cmp -s "$PUBLIC_DIR/$local_file" "$tmp/$downloaded_file" \
+        || fail "Apache sirve otra version de $local_file. Revisa la rama y ejecuta make deploy."
+    ok "Contenido publicado coincide con $local_file"
+}
+
+check_versioned_asset() {
+    local relative="$1" mime="$2" filename="$3" version
+    version="$(php -r 'echo substr(hash_file("sha256", $argv[1]), 0, 12);' \
+        "$PUBLIC_DIR/$relative")" || fail "No se pudo calcular la version de $relative"
+    [[ "$(< "$tmp/index.html")" == *"$relative?v=$version"* ]] \
+        || fail "El HTML no referencia la version actual de $relative. Actualiza las versiones y despliega."
+    check_get "/$relative?v=$version" "$mime" "$filename"
+    check_deployed_copy "$relative" "$filename"
 }
 
 # Sin -f: necesitamos poder inspeccionar HTTP 405 en la API.
@@ -73,9 +93,16 @@ check_head() {
 printf 'GutsNet: verificando %s (Host: %s)\n\n' "$BASE_URL" "$HOST"
 
 check_get "/" '^text/html' "index.html"
+check_deployed_copy "index.html" "index.html"
 check_get "/materias.html" '^text/html' "materias.html"
-check_get "/assets/css/style.css" '^text/css' "style.css"
-check_get "/assets/js/main.js" '^(application|text)/javascript' "main.js"
+check_deployed_copy "materias.html" "materias.html"
+check_versioned_asset "assets/css/style.css" '^text/css' "style.css"
+check_versioned_asset "assets/js/main.js" '^(application|text)/javascript' "main.js"
+
+if [[ "${GUTSNET_ASSETS_ONLY:-0}" == "1" ]]; then
+    printf '\nLa version de HTML, CSS y JavaScript publicada es correcta.\n'
+    exit 0
+fi
 
 check_head "/assets/audio/ambiente1.mp3" '^audio/mpeg'
 check_head "/assets/audio/ambiente2.mp3" '^audio/mpeg'

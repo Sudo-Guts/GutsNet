@@ -45,6 +45,8 @@ help:
 
 check:
 	@command -v rsync >/dev/null || { echo "Falta rsync"; exit 1; }
+	@command -v python3 >/dev/null || { echo "Falta python3"; exit 1; }
+	@python3 "$(ROOT)/scripts/version-web-assets.py" --check
 	@test -d "$(SRC)" || { echo "No existe $(SRC)"; exit 1; }
 	@[ -f "$(SRC)/index.html" ] || [ -f "$(SRC)/index.php" ] || { \
 		echo "Falta index.html o index.php"; exit 1; \

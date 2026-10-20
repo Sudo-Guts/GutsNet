@@ -81,10 +81,10 @@ function escapeHtml(string $value): string
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <meta name="theme-color" content="#f6f3eb">
+    <meta name="theme-color" content="#ffffff">
     <title>GutsNet Cinema | Biblioteca privada</title>
-    <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="icon" href="../assets/img/favicon.svg?v=2ca871dd7910" type="image/svg+xml">
+    <link rel="stylesheet" href="../assets/css/style.css?v=8bddbe37b28e">
 </head>
 <body>
     <a class="skip-link" href="#contenido">Ir al contenido</a>
@@ -92,7 +92,7 @@ function escapeHtml(string $value): string
         <div class="container header-content">
             <a class="logo" href="../" aria-label="GutsNet, inicio">
                 <span class="logo-symbol" aria-hidden="true">g<span>.</span></span>
-                GutsNet<span class="logo-caption">un taller digital</span>
+                GutsNet<span class="logo-caption">hardware<br>y software</span>
             </a>
 
             <nav aria-label="Navegación de Cinema">

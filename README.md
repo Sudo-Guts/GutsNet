@@ -8,7 +8,8 @@ y programación de sockets**. Entorno objetivo: Ubuntu 26.04 LTS.
 ### Web pública (código disponible)
 
 - Sitio personal en HTML, CSS y JavaScript.
-- Identidad pastel de taller: crema, salvia, lavanda, durazno y azul grisáceo.
+- Fondo blanco y acentos pastel en lavanda, azul, verde y durazno.
+- CSS, JavaScript e ilustraciones con versiones por contenido para evitar caché obsoleta.
 - Portada con una señal senoidal sintética ajustable, de un segundo de duración.
 - Catálogo con filtros de hardware, señales, Linux y redes.
 - Navegación adaptable con menú móvil; contenido accesible sin JavaScript.
@@ -74,6 +75,7 @@ Las comprobaciones del portafolio no requieren Apache ni paquetes de Node:
 
 ```bash
 python3 scripts/check-web.py
+python3 scripts/version-web-assets.py --check
 node --check C0DE/web/public/assets/js/main.js
 node scripts/test-web-ui.cjs
 ```
@@ -82,6 +84,19 @@ Verifican recursos y fragmentos locales, referencias de accesibilidad, geometrí
 de la señal y comportamiento de filtros, menú, contador y controles de audio.
 Las pruebas de JavaScript usan un DOM mínimo; no comprueban el renderizado
 ni sustituyen las pruebas multimedia en un navegador real.
+
+Al modificar CSS, JavaScript o SVG, actualiza las referencias antes de publicar:
+
+```bash
+python3 scripts/version-web-assets.py
+```
+
+`make preview` y `make deploy` comprueban estas versiones. `make test-web`
+compara el HTML, CSS y JavaScript entregados por Apache con los archivos de la
+rama local: HTTP 200 por sí solo ya no basta para aprobar la publicación.
+`GUTSNET_ASSETS_ONLY=1 make test-web` limita la prueba a estos recursos.
+`bash scripts/test-web-publication.sh` prueba esta detección mediante un servidor
+PHP temporal y copias deliberadamente desactualizadas de los recursos.
 
 Consulta [DOC/Pruebas.md](DOC/Pruebas.md) para ejecutar pruebas de sintaxis,
 servicios HTTP, tipos MIME, solicitudes parciales de video y persistencia

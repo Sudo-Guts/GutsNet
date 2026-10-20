@@ -3,12 +3,17 @@
 // GutsNet · Interacciones sin dependencias.
 // El contenido y los enlaces siguen disponibles si JavaScript está desactivado.
 document.addEventListener("DOMContentLoaded", () => {
-    initMenu();
-    initSectionNavigation();
-    initProjectFilters();
-    initSignal();
-    initVisitCounter();
-    initMusicPlayer();
+    const initializers = [
+        initMenu, initSectionNavigation, initProjectFilters,
+        initSignal, initVisitCounter, initMusicPlayer
+    ];
+    initializers.forEach((initialize) => {
+        try {
+            initialize();
+        } catch (error) {
+            console.error(`GutsNet - No se pudo iniciar ${initialize.name}:`, error);
+        }
+    });
 });
 
 function initMenu() {
@@ -18,6 +23,9 @@ function initMenu() {
         return;
     }
 
+    if (typeof window.matchMedia !== "function") {
+        return;
+    }
     const mobile = window.matchMedia("(max-width: 850px)");
 
     function setOpen(open) {
@@ -45,7 +53,11 @@ function initMenu() {
             toggle.focus();
         }
     });
-    mobile.addEventListener("change", syncMenu);
+    if (typeof mobile.addEventListener === "function") {
+        mobile.addEventListener("change", syncMenu);
+    } else if (typeof mobile.addListener === "function") {
+        mobile.addListener(syncMenu);
+    }
     syncMenu();
 }
 

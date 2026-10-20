@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="El taller digital de Gustavo Ruiz Luis. Electrónica, RISC-V, procesamiento de señales y proyectos en Linux, desde la Universidad Tecnológica de la Mixteca.">
-    <meta name="theme-color" content="#f6f3eb">
+    <meta name="theme-color" content="#ffffff">
     <title>GutsNet | El taller de Gustavo</title>
-    <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/main.js" defer></script>
+    <link rel="icon" href="assets/img/favicon.svg?v=2ca871dd7910" type="image/svg+xml">
+    <link rel="stylesheet" href="assets/css/style.css?v=8bddbe37b28e">
+    <script src="assets/js/main.js?v=361af7270b46" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#inicio">Ir al contenido</a>
@@ -18,7 +18,7 @@
         <div class="container header-content">
             <a class="logo" href="#inicio" aria-label="GutsNet, inicio">
                 <span class="logo-symbol" aria-hidden="true">g<span>.</span></span>
-                GutsNet<span class="logo-caption">un taller digital</span>
+                GutsNet<span class="logo-caption">hardware<br>y software</span>
             </a>
             <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav" hidden>Menú <span aria-hidden="true">+</span></button>
             <nav id="main-nav" aria-label="Navegación principal">
@@ -39,34 +39,34 @@
                 <div class="hero-grid">
                     <div class="hero-content">
                         <p class="eyebrow"><span class="small-cross" aria-hidden="true">+</span> MI RINCÓN DE INTERNET</p>
-                        <h1 id="hero-title">De la señal<br>al <em>código.</em></h1>
+                        <h1 id="hero-title">Entre circuitos<br>y <em>código.</em></h1>
                         <p class="hero-description">Soy Gustavo. Estudio Electrónica en la UTM y me gusta entender qué pasa por dentro: de un circuito, de un procesador y de las herramientas que uso todos los días.</p>
                         <div class="hero-actions">
-                            <a class="button primary" href="#proyectos">Pasar al taller <span aria-hidden="true">↗</span></a>
+                            <a class="button primary" href="#proyectos">Ver mis proyectos <span aria-hidden="true">↗</span></a>
                             <a class="text-link" href="https://github.com/Sudo-Guts" target="_blank" rel="noopener noreferrer">Mi GitHub <span aria-hidden="true">↗</span></a>
                         </div>
-                        <p class="hero-footnote mono">CIRCUITOS · C · FPGA · LINUX · PRUEBA Y ERROR</p>
+                        <p class="hero-footnote mono"><span>C / C++</span><span>RISC-V / FPGA</span><span>Linux</span></p>
                     </div>
 
                     <div class="workbench">
-                        <div class="bench-heading mono"><span>01 / MESA DE PRUEBAS</span><span aria-hidden="true">↙ mueve los controles</span></div>
+                        <div class="bench-heading mono"><span>SEÑALES / MI MESA DE PRUEBAS</span><span aria-hidden="true">Interactivo</span></div>
                         <div class="oscilloscope">
-                            <div class="scope-heading"><span class="mono">UNA SEÑAL PARA EMPEZAR</span><span class="scope-led" aria-hidden="true"></span></div>
+                            <div class="scope-heading"><span class="mono">GENERA TU PROPIA SEÑAL</span><span class="scope-led" aria-hidden="true"></span></div>
                             <svg class="scope-display" viewBox="0 0 480 230" role="img" aria-labelledby="signal-title signal-description">
                                 <title id="signal-title">Señal senoidal de prueba</title>
                                 <desc id="signal-description">Dos ciclos de una senoide, de amplitud 0.6, durante un segundo. Los controles permiten cambiar frecuencia y amplitud.</desc>
-                                <defs><pattern id="scope-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#dae6db" stroke-opacity=".12" stroke-width="1"/></pattern></defs>
-                                <rect width="480" height="230" rx="6" fill="#293e36"/>
+                                <defs><pattern id="scope-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#d8deee" stroke-opacity=".7" stroke-width="1"/></pattern></defs>
+                                <rect width="480" height="230" rx="6" fill="#f8f9fd"/>
                                 <rect x="20" y="15" width="440" height="200" fill="url(#scope-grid)"/>
-                                <path d="M20 115H460M240 15V215" fill="none" stroke="#dae6db" stroke-opacity=".3" stroke-dasharray="3 5"/>
-                                <path id="signal-path" d="M20,115.00 L25,108.17 L30,101.48 L35,95.06 L40,89.05 L45,83.57 L50,78.72 L55,74.62 L60,71.34 L65,68.94 L70,67.49 L75,67.00 L80,67.49 L85,68.94 L90,71.34 L95,74.62 L100,78.72 L105,83.57 L110,89.05 L115,95.06 L120,101.48 L125,108.17 L130,115.00 L135,121.83 L140,128.52 L145,134.94 L150,140.95 L155,146.43 L160,151.28 L165,155.38 L170,158.66 L175,161.06 L180,162.51 L185,163.00 L190,162.51 L195,161.06 L200,158.66 L205,155.38 L210,151.28 L215,146.43 L220,140.95 L225,134.94 L230,128.52 L235,121.83 L240,115.00 L245,108.17 L250,101.48 L255,95.06 L260,89.05 L265,83.57 L270,78.72 L275,74.62 L280,71.34 L285,68.94 L290,67.49 L295,67.00 L300,67.49 L305,68.94 L310,71.34 L315,74.62 L320,78.72 L325,83.57 L330,89.05 L335,95.06 L340,101.48 L345,108.17 L350,115.00 L355,121.83 L360,128.52 L365,134.94 L370,140.95 L375,146.43 L380,151.28 L385,155.38 L390,158.66 L395,161.06 L400,162.51 L405,163.00 L410,162.51 L415,161.06 L420,158.66 L425,155.38 L430,151.28 L435,146.43 L440,140.95 L445,134.94 L450,128.52 L455,121.83 L460,115.00" fill="none" stroke="#dbeaa8" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                <g fill="#d1dfd4" font-size="10" font-family="monospace"><text x="28" y="32">CH 1 / SENO</text><text x="28" y="204">0 s</text><text x="428" y="204">1 s</text></g>
+                                <path d="M20 115H460M240 15V215" fill="none" stroke="#b9c2d8" stroke-opacity=".7" stroke-dasharray="3 5"/>
+                                <path id="signal-path" d="M20,115.00 L25,108.17 L30,101.48 L35,95.06 L40,89.05 L45,83.57 L50,78.72 L55,74.62 L60,71.34 L65,68.94 L70,67.49 L75,67.00 L80,67.49 L85,68.94 L90,71.34 L95,74.62 L100,78.72 L105,83.57 L110,89.05 L115,95.06 L120,101.48 L125,108.17 L130,115.00 L135,121.83 L140,128.52 L145,134.94 L150,140.95 L155,146.43 L160,151.28 L165,155.38 L170,158.66 L175,161.06 L180,162.51 L185,163.00 L190,162.51 L195,161.06 L200,158.66 L205,155.38 L210,151.28 L215,146.43 L220,140.95 L225,134.94 L230,128.52 L235,121.83 L240,115.00 L245,108.17 L250,101.48 L255,95.06 L260,89.05 L265,83.57 L270,78.72 L275,74.62 L280,71.34 L285,68.94 L290,67.49 L295,67.00 L300,67.49 L305,68.94 L310,71.34 L315,74.62 L320,78.72 L325,83.57 L330,89.05 L335,95.06 L340,101.48 L345,108.17 L350,115.00 L355,121.83 L360,128.52 L365,134.94 L370,140.95 L375,146.43 L380,151.28 L385,155.38 L390,158.66 L395,161.06 L400,162.51 L405,163.00 L410,162.51 L415,161.06 L420,158.66 L425,155.38 L430,151.28 L435,146.43 L440,140.95 L445,134.94 L450,128.52 L455,121.83 L460,115.00" fill="none" stroke="#9875cd" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                <g fill="#747e97" font-size="10" font-family="monospace"><text x="28" y="32">CH 1 / SENO</text><text x="28" y="204">0 s</text><text x="428" y="204">1 s</text></g>
                             </svg>
                             <div class="scope-controls">
                                 <label for="signal-frequency">Frecuencia <output id="frequency-value" for="signal-frequency">2 Hz</output><input id="signal-frequency" type="range" disabled min="1" max="5" step="0.5" value="2"></label>
                                 <label for="signal-amplitude">Amplitud <output id="amplitude-value" for="signal-amplitude">0.6</output><input id="signal-amplitude" type="range" disabled min="0.1" max="1" step="0.1" value="0.6"></label>
                             </div>
-                            <p class="scope-caption mono">SEÑAL SINTÉTICA · AMPLITUD NORMALIZADA</p>
+                            <p class="scope-caption mono">x(t) = A · sin(2πft) / VENTANA DE 1 s</p>
                         </div>
                         <div class="bench-notes">
                             <div class="chip-note"><span class="chip-mark" aria-hidden="true">RV<br>32I</span><span class="mono">hardware<br>+ software</span></div>
@@ -105,7 +105,7 @@
                     <article class="project-card project-featured" data-category="hardware senales">
                         <div class="project-visual vox-visual" aria-hidden="true">
                             <div class="visual-topline mono"><span>VoxID</span><span>SEÑAL → DATOS</span></div>
-                            <svg viewBox="0 0 540 190" fill="none"><path d="M20 95H520" stroke="#78638c" stroke-opacity=".25"/><path d="M20 95L35 93L43 99L52 87L59 102L68 89L76 100L84 68L92 126L100 44L108 143L116 32L124 154L132 55L140 121L148 83L156 102L164 87L172 99L180 95H200" stroke="#71558c" stroke-width="2.5" stroke-linejoin="round"/><rect x="222" y="62" width="92" height="66" rx="6" fill="#f6f3eb" stroke="#8c759f"/><text x="268" y="101" fill="#5e4977" text-anchor="middle" font-family="monospace" font-size="19">ADC</text><path d="M201 95H221M315 95H341" stroke="#78638c" stroke-width="2"/><g stroke="#71558c" stroke-width="7" stroke-linecap="round"><path d="M361 126V111M381 126V78M401 126V45M421 126V88M441 126V64M461 126V101M481 126V114M501 126V119"/></g><g fill="#6e597f" font-family="monospace" font-size="11"><text x="72" y="179">VOZ</text><text x="238" y="179">MUESTRAS</text><text x="396" y="179">ESPECTRO</text></g></svg>
+                            <svg viewBox="0 0 540 190" fill="none"><path d="M20 95H520" stroke="#78638c" stroke-opacity=".25"/><path d="M20 95L35 93L43 99L52 87L59 102L68 89L76 100L84 68L92 126L100 44L108 143L116 32L124 154L132 55L140 121L148 83L156 102L164 87L172 99L180 95H200" stroke="#71558c" stroke-width="2.5" stroke-linejoin="round"/><rect x="222" y="62" width="92" height="66" rx="6" fill="#ffffff" stroke="#8c759f"/><text x="268" y="101" fill="#5e4977" text-anchor="middle" font-family="monospace" font-size="19">ADC</text><path d="M201 95H221M315 95H341" stroke="#78638c" stroke-width="2"/><g stroke="#71558c" stroke-width="7" stroke-linecap="round"><path d="M361 126V111M381 126V78M401 126V45M421 126V88M441 126V64M461 126V101M481 126V114M501 126V119"/></g><g fill="#6e597f" font-family="monospace" font-size="11"><text x="72" y="179">VOZ</text><text x="238" y="179">MUESTRAS</text><text x="396" y="179">ESPECTRO</text></g></svg>
                             <span class="visual-caption mono">APUNTE DEL RECORRIDO DE LA SEÑAL</span>
                         </div>
                         <div class="project-content"><div class="project-meta mono"><span>01 / VOZ Y SISTEMAS EMBEBIDOS</span><span class="project-state">En desarrollo</span></div><h3>VoxID</h3><p>Un sistema de identificación de hablante. El recorrido empieza en el micrófono: acondicionar la voz, adquirirla y extraer características para trabajar con ella en digital.</p><ul class="tag-list"><li>Filtros</li><li>ADC</li><li>MFCC</li><li>C / KiCad</li></ul><a class="project-link" href="https://github.com/Sudo-Guts/VoxID" target="_blank" rel="noopener noreferrer">Seguir el desarrollo de VoxID <span aria-hidden="true">↗</span></a></div>
@@ -151,17 +151,17 @@
         </section>
 
         <section id="cv" class="section cv-section" aria-labelledby="cv-title">
-            <div class="container cv-layout"><span class="cv-stamp mono" aria-hidden="true">G R L<br>CURRICULUM<br>VITAE</span><div><p class="eyebrow">04 / EL PERFIL FORMAL</p><h2 id="cv-title">Un poco más <em>en orden.</em></h2><p>Mi formación, herramientas y experiencia en proyectos. El CV en PDF todavía está pendiente; por ahora puedes conocer mi trabajo en los repositorios.</p></div><a class="button secondary" href="https://github.com/Sudo-Guts" target="_blank" rel="noopener noreferrer">Ver mi trabajo <span aria-hidden="true">↗</span></a></div>
+            <div class="container cv-layout"><span class="cv-stamp mono" aria-hidden="true">G R L<br>CURRICULUM<br>VITAE</span><div><p class="eyebrow">04 / EL PERFIL FORMAL</p><h2 id="cv-title">Mi perfil <em>técnico.</em></h2><p>Mi formación, herramientas y experiencia en proyectos. El CV en PDF todavía está pendiente; por ahora puedes conocer mi trabajo en los repositorios.</p></div><a class="button secondary" href="https://github.com/Sudo-Guts" target="_blank" rel="noopener noreferrer">Ver mi trabajo <span aria-hidden="true">↗</span></a></div>
         </section>
 
         <section id="multimedia" class="section multimedia-section" aria-labelledby="media-title">
             <div class="container">
                 <div class="section-heading"><div><p class="eyebrow">05 / CAMBIAR DE FRECUENCIA</p><h2 id="media-title">También hay <em>pausas.</em></h2></div><p>Un video, música de fondo<br>y el rincón multimedia de GutsNet.</p></div>
                 <div class="media-layout">
-                    <div class="video-block"><video class="project-video" controls preload="none" playsinline poster="assets/img/video-poster.svg"><source src="assets/video/demostracion.mp4" type="video/mp4">Tu navegador no admite video HTML5.</video><div class="video-caption"><h3>Video de demostración</h3><span class="mono">GUTSNET / MULTIMEDIA</span></div></div>
+                    <div class="video-block"><video class="project-video" controls preload="none" playsinline poster="assets/img/video-poster.svg?v=68c2f450ee5a"><source src="assets/video/demostracion.mp4" type="video/mp4">Tu navegador no admite video HTML5.</video><div class="video-caption"><h3>Video de demostración</h3><span class="mono">GUTSNET / MULTIMEDIA</span></div></div>
                     <div class="media-sidebar">
                         <section class="music-player" aria-labelledby="music-heading"><div class="music-heading"><span class="record" aria-hidden="true"></span><div><p class="eyebrow">PARA ACOMPAÑAR EL CÓDIGO</p><h3 id="music-heading">Un poco de música</h3></div></div><p id="music-title" aria-live="polite">Música ambiental 1</p><div class="music-controls"><button id="music-toggle" type="button" aria-pressed="false">Reproducir</button><button id="music-next" type="button" aria-label="Siguiente pista">Siguiente <span aria-hidden="true">→</span></button></div><label class="volume-label" for="music-volume">Volumen<input id="music-volume" type="range" min="0" max="100" value="20"></label><p class="player-note mono">DALE PLAY CUANDO QUIERAS.</p></section>
-                        <div class="cinema-note"><span class="mono">FUNCIÓN PRIVADA</span><h3>GutsNet Cinema</h3><p>La biblioteca multimedia del servidor. Su acceso requiere HTTPS y credenciales; la configuración sigue en preparación.</p><a class="text-link" href="cinema/">Entrar a Cinema <span aria-hidden="true">↗</span></a></div>
+                        <div class="cinema-note"><span class="mono">FUNCIÓN PRIVADA</span><h3>GutsNet Cinema</h3><p>La biblioteca multimedia del servidor. Su acceso requiere HTTPS y credenciales; la configuración sigue en preparación.</p><span class="coming-soon">Acceso privado · en preparación</span></div>
                     </div>
                 </div>
             </div>

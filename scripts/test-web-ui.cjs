@@ -84,6 +84,19 @@ async function test() {
     assert.equal(amplitudeValue.textContent, "1.0");
     assert(description.textContent.includes("5 Hz"));
 
+    // Un fallo en la navegación no debe impedir que se active la señal.
+    frequency.disabled = true;
+    amplitude.disabled = true;
+    const isolated = environment({ ids: {
+        "menu-toggle": new Element(), "main-nav": new Element(),
+        "signal-frequency": frequency, "signal-amplitude": amplitude,
+        "signal-path": signalPath, "frequency-value": frequencyValue,
+        "amplitude-value": amplitudeValue, "signal-description": description
+    }, window: { matchMedia() { throw new Error("API de navegación no disponible"); } } });
+    isolated.events.DOMContentLoaded();
+    assert.equal(frequency.disabled, false);
+    assert.equal(amplitude.disabled, false);
+
     const buttons = ["all", "hardware", "senales", "linux"].map((filter) => new Element(filter, { filter }));
     const categories = ["hardware senales", "hardware", "hardware senales", "linux", "linux", "hardware"];
     const projects = categories.map((category) => new Element("", { category }));
@@ -126,6 +139,21 @@ async function test() {
     media.change();
     assert.equal(nav.hidden, false);
     assert(toggle.hidden);
+
+    const legacyNav = new Element();
+    const legacyToggle = new Element();
+    legacyToggle.querySelector = () => new Element();
+    const legacyMedia = { matches: true, addListener(callback) { this.change = callback; } };
+    const legacy = environment({ ids: { "menu-toggle": legacyToggle, "main-nav": legacyNav },
+        window: { matchMedia: () => legacyMedia } });
+    legacy.context.initMenu();
+    assert(legacyNav.hidden);
+    await legacyToggle.fire("click");
+    assert.equal(legacyNav.hidden, false);
+    legacyMedia.matches = false;
+    legacyMedia.change();
+    assert.equal(legacyNav.hidden, false);
+    assert(legacyToggle.hidden);
 
     const counter = new Element();
     let requested;
