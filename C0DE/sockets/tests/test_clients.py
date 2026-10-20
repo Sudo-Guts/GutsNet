@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Prueba clientes y destinos configurables con peers temporales, sin Internet."""
 from contextlib import contextmanager
+import errno
 from pathlib import Path
 import socket
 import subprocess
@@ -13,10 +14,16 @@ OUT = ROOT / "out"
 
 
 @contextmanager
-def tcp_service(handler):
-    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    listener.bind(("127.0.0.1", 0))
-    listener.listen(1)
+def tcp_service(handler, family=socket.AF_INET, port=0):
+    listener = socket.socket(family, socket.SOCK_STREAM)
+    try:
+        if family == socket.AF_INET6:
+            listener.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+        listener.bind(("::1" if family == socket.AF_INET6 else "127.0.0.1", port))
+        listener.listen(1)
+    except Exception:
+        listener.close()
+        raise
     listener.settimeout(3)
     stop = threading.Event()
     errors = []
@@ -138,6 +145,38 @@ class Clients(unittest.TestCase):
             result = run_client("daytime_tcp_client", port)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn(b"vacia", result.stderr)
+
+    def test_daytime_prueba_la_siguiente_direccion_si_la_primera_no_envia_datos(self):
+        families = []
+        for family, _, _, _, _ in socket.getaddrinfo(
+                "localhost", 0, socket.AF_UNSPEC, socket.SOCK_STREAM):
+            if family not in families:
+                families.append(family)
+        if set(families) != {socket.AF_INET, socket.AF_INET6}:
+            self.skipTest("localhost no tiene las dos familias de direcciones.")
+        response = b"2026-10-20 20:00:00 UTC\r\n"
+        visits = []
+
+        def empty(connection, _):
+            visits.append("vacia")
+
+        def available(connection, _):
+            visits.append("hora")
+            connection.sendall(response)
+
+        try:
+            with tcp_service(empty, family=families[0]) as port:
+                with tcp_service(available, family=families[1], port=port):
+                    result = run_client("daytime_tcp_client", port)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout, response)
+                    self.assertEqual(visits, ["vacia", "hora"])
+                    self.assertIn(b"Respuesta Daytime vacia", result.stderr)
+        except OSError as error:
+            if error.errno in {errno.EAFNOSUPPORT, errno.EADDRNOTAVAIL,
+                              errno.EPROTONOSUPPORT}:
+                self.skipTest("El entorno no tiene loopback IPv6 disponible.")
+            raise
 
     def test_clientes_udp_con_host_y_puerto_configurables(self):
         with udp_service(lambda data: data) as port:

@@ -64,16 +64,44 @@ Fuentes del servicio: [TCPbin](https://tcpbin.com/),
 y [servidores de NIST](https://tf.nist.gov/tf-cgi/servers.cgi).
 NIST pide no realizar consultas con una frecuencia mayor a una cada 4 segundos.
 
+### Si la consulta externa falla
+
+Los clientes TCP muestran en stderr la IP y el puerto de cada intento, tanto
+para IPv4 como para IPv6. Si una dirección de Daytime acepta la conexión pero
+cierra sin datos, el cliente intenta la siguiente dirección resuelta dentro del
+límite global del comando. Si ya escribió parte de una respuesta y después falla,
+termina con error para evitar mezclar datos de dos servidores.
+
+`Connection refused` significa que la conexión fue rechazada. Ese resultado
+no permite distinguir por sí solo entre un servicio cerrado y un rechazo en la red.
+`Respuesta Daytime vacia` significa que la conexión terminó sin entregar datos.
+
+Como diagnóstico puedes elegir otros destinos documentados:
+
+```bash
+make -C C0DE/sockets echo-remoto \
+  ECHO_HOST=52.43.121.77 ECHO_PORT=9001 MESSAGE="Hola, soy Gustavo"
+
+make -C C0DE/sockets hora-remota \
+  DAYTIME_HOST=time-a-g.nist.gov DAYTIME_PORT=13
+```
+
+[Digi documenta Echo TCP en 52.43.121.77:9001](https://docs.digi.com/resources/documentation/digidocs/90002258/tasks/t_echo_server.htm).
+NIST lista `time-a-g.nist.gov` (`129.6.15.28`) con todos sus servicios disponibles.
+La disponibilidad y el acceso desde la red del usuario se comprueban al ejecutar
+la consulta; estos ejemplos no suponen que la conexión ya haya sido probada allí.
+
 ### Pruebas de los clientes
 
 ```bash
 make -C C0DE/sockets test
 ```
 
-Compila los ocho programas y ejecuta nueve pruebas con servidores temporales
+Compila los ocho programas y ejecuta diez pruebas con servidores temporales
 en puertos libres: Echo fragmentado, conexión que permanece abierta, respuestas
 incorrectas o incompletas, Daytime ASCII/vacío, UDP, cambio de destino/mensaje
-y límite de espera. Las pruebas no dependen de servicios de Internet.
+y límite de espera. También comprueba que Daytime pase de una dirección sin datos
+a otra que sí entrega una respuesta. Las pruebas no dependen de servicios de Internet.
 El acceso a TCPbin y NIST se comprueba por separado desde la red del usuario.
 
 ## Servidores locales en los puertos oficiales

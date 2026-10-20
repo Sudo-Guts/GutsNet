@@ -55,6 +55,17 @@ static int write_all(int fd, const unsigned char *buf, size_t len)
     return 0;
 }
 
+static void print_destination(const struct addrinfo *addr)
+{
+    char host[128], port[32];
+    if (getnameinfo(addr->ai_addr, addr->ai_addrlen, host, sizeof(host),
+                    port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
+        fprintf(stderr, "Echo TCP -> %s%s%s:%s\n",
+                addr->ai_family == AF_INET6 ? "[" : "", host,
+                addr->ai_family == AF_INET6 ? "]" : "", port);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 4) {
@@ -63,7 +74,7 @@ int main(int argc, char *argv[])
     }
 
     struct addrinfo hints = {0};
-    hints.ai_family = AF_INET;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
     struct addrinfo *resolved = NULL;
@@ -75,20 +86,24 @@ int main(int argc, char *argv[])
 
     int client_fd = -1;
     for (const struct addrinfo *addr = resolved; addr != NULL; addr = addr->ai_next) {
+        print_destination(addr);
         client_fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
         if (client_fd < 0) {
+            perror("socket");
             continue;
         }
         if (connect(client_fd, addr->ai_addr, addr->ai_addrlen) == 0) {
             break;
         }
+        perror("connect");
         close(client_fd);
         client_fd = -1;
     }
     freeaddrinfo(resolved);
 
     if (client_fd < 0) {
-        perror("connect");
+        fprintf(stderr, "No se pudo conectar con ninguna direccion de %s:%s\n",
+                argv[1], argv[2]);
         return EXIT_FAILURE;
     }
 
