@@ -35,7 +35,8 @@ El instalador:
 - Guarda las cuentas en `/etc/gutsnet/cinema.htpasswd` y las llaves fuera de Git.
 - Conserva las contraseñas existentes al repetir la instalación.
 - Respalda los VirtualHosts anteriores en `/var/backups/gutsnet/cinema/`.
-- Activa HTTP/HTTPS, publica la web y reinicia Apache.
+- Desactiva el sitio de ejemplo `000-default` conservando su configuración, activa
+  HTTP/HTTPS de GutsNet, publica la web y reinicia Apache.
 - Agrega `Prueba_GutsCinema.mp4`, una copia del video de demostración del proyecto,
   si ese archivo no existe. No reemplaza otras películas.
 

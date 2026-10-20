@@ -88,7 +88,7 @@ if [[ "$skip_packages" == 0 ]]; then
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         apache2 apache2-utils php libapache2-mod-php php-sqlite3 openssl rsync curl python3 make util-linux
 fi
-for command in apache2ctl a2enmod a2ensite htpasswd openssl php rsync python3 curl make runuser; do
+for command in apache2ctl a2enmod a2ensite a2dissite htpasswd openssl php rsync python3 curl make runuser; do
     command -v "$command" >/dev/null || fail "Falta $command"
 done
 if [[ -d /run/systemd/system ]]; then
@@ -207,6 +207,11 @@ for name in gutsnet.conf gutsnet-ssl.conf; do
 done
 
 a2enmod ssl auth_basic authn_file alias headers rewrite
+# El sitio de ejemplo de Ubuntu capturaria las peticiones por IP antes de GutsNet.
+# a2dissite conserva su archivo de configuracion para poder reactivarlo.
+if [[ -e /etc/apache2/sites-enabled/000-default.conf || -L /etc/apache2/sites-enabled/000-default.conf ]]; then
+    a2dissite 000-default.conf
+fi
 a2ensite gutsnet.conf gutsnet-ssl.conf
 apache2ctl configtest
 make -C "$repo" deploy
