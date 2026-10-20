@@ -64,7 +64,8 @@ async function main() {
             assert.equal(new URL(response.url()).pathname, "/cinema/manage.php",
                 "La carga debe llegar a manage.php y no a [object HTMLInputElement].");
             assert.equal(response.status(), 201, "La carga desde el navegador debe crear el archivo.");
-            assert.equal((await response.json()).ok, true);
+            // La tarjeta confirma que el cliente proceso el JSON y recargo el catalogo.
+            // Chromium puede descartar el cuerpo XHR cuando comienza esa navegacion.
             await cardFor(fixture.name).waitFor({ state: "attached" });
             const partial = await context.request.get(
                 new URL("/cinema/media/" + fixture.name, catalog).href,
