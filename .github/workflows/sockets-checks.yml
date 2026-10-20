@@ -1,0 +1,48 @@
+name: Validacion de sockets y systemd
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "C0DE/sockets/**"
+      - "SERVER/sockets/**"
+      - ".github/workflows/sockets-checks.yml"
+  pull_request:
+    paths:
+      - "C0DE/sockets/**"
+      - "SERVER/sockets/**"
+      - ".github/workflows/sockets-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  sockets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comprobar sintaxis Bash
+        run: |
+          bash -n SERVER/sockets/install.sh
+          bash -n SERVER/sockets/check.sh
+
+      - name: Compilar los 8 programas C
+        run: |
+          make -C C0DE/sockets
+
+      - name: Validar unidad systemd
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          unit = Path("SERVER/sockets/gutsnet@.service").read_text()
+          required = [
+              "User=nobody", "Group=nogroup",
+              "AmbientCapabilities=CAP_NET_BIND_SERVICE",
+              "CapabilityBoundingSet=CAP_NET_BIND_SERVICE",
+              "NoNewPrivileges=yes",
+              "ExecStart=/usr/local/libexec/gutsnet/%i"
+          ]
+          for item in required:
+              assert item in unit, item
+          print("OK: servicios restringidos; privilegio de puerto explicito")
+          PY
