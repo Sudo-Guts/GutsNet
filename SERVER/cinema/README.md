@@ -69,6 +69,20 @@ Después de actualizar la rama, ejecuta **`make install-cinema` una vez** para
 aplicar los nuevos permisos y la configuración de carga; `make deploy` por sí
 solo actualiza el código público.
 
+Si no aparecen los controles o fallan tanto la carga como la eliminación, aplica
+la reparación y comprueba el resultado:
+
+```bash
+git pull --ff-only
+make install-cinema
+make test-cinema
+```
+
+La reinstalación corrige el propietario y los permisos de la carpeta de Cinema,
+su área de carga y su bloqueo de escritura, incluso si quedaron creados por root.
+Conserva los archivos y las cuentas existentes. `make check-cinema` identifica
+los permisos pendientes antes de intentar una carga.
+
 1. Abre **https://gutsnet.test/cinema/** con tu cuenta habitual.
 2. En «Agrega un video o una canción», selecciona un **MP4 o MP3** y pulsa
    **Subir archivo**. Se muestra el progreso; conserva la pestaña abierta.

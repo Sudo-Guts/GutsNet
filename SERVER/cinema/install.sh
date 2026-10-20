@@ -98,8 +98,19 @@ php -r 'exit(PHP_INT_SIZE >= 8 && extension_loaded("fileinfo") && extension_load
 [[ -d "$shared" ]] || install -d -o root -g root -m 755 "$shared"
 [[ -d "$storage" ]] || install -d -o www-data -g www-data -m 770 "$storage"
 install -d -o www-data -g www-data -m 700 "$incoming"
+# Repara instalaciones anteriores antes de exigir acceso a Apache.
+# Un bloqueo creado por root tambien impedia tanto las altas como las bajas.
+chown www-data:www-data "$storage" "$incoming"
+chmod 0770 "$storage"
+chmod 0700 "$incoming"
+if [[ -e "$incoming/.lock" ]]; then
+    chown www-data:www-data "$incoming/.lock"
+    chmod 0600 "$incoming/.lock"
+fi
 runuser -u www-data -- test -r "$storage" && runuser -u www-data -- test -x "$storage" \
     || fail "Apache no puede leer/recorrer $storage. Revisa sus permisos sin alterar el area de FTP."
+runuser -u www-data -- test -w "$storage" && runuser -u www-data -- test -w "$incoming" \
+    || fail 'Apache no tiene escritura en la biblioteca dedicada.'
 install -d -o root -g www-data -m 750 "$auth_dir"
 install -d -o root -g root -m 700 "$tls_dir"
 [[ -d /var/lib/gutsnet ]] || install -d -o www-data -g www-data -m 750 /var/lib/gutsnet

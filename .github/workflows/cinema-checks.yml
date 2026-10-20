@@ -65,12 +65,25 @@ jobs:
           sudo bash SERVER/cinema/add.sh C0DE/web/public/assets/video/demostracion.mp4 \
             'Pelicula_<b>&"demo".mp4'
 
-          # Volver a instalar conserva certificado y credenciales.
+          # Repara directorios inaccesibles y un bloqueo dejado por root.
+          # La reinstalacion conserva medios, certificado y credenciales.
           auth_before="$(sudo sha256sum /etc/gutsnet/cinema.htpasswd | cut -d ' ' -f1)"
           cert_before="$(sha256sum /etc/ssl/certs/gutsnet.crt | cut -d ' ' -f1)"
+          movie_before="$(sudo sha256sum /home/gutsnet-shared/peliculas/Prueba_GutsCinema.mp4 | cut -d ' ' -f1)"
+          sudo chown root:root /home/gutsnet-shared/peliculas/.incoming/.lock
+          sudo chmod 0600 /home/gutsnet-shared/peliculas/.incoming/.lock
+          if sudo bash SERVER/cinema/check.sh > "$RUNNER_TEMP/cinema-lock.log" 2>&1; then
+            echo 'ERROR: no se detecto el bloqueo inaccesible'
+            exit 1
+          fi
+          grep -q 'Apache no puede abrir el bloqueo de Cinema' "$RUNNER_TEMP/cinema-lock.log"
+          sudo chown root:root /home/gutsnet-shared/peliculas \
+            /home/gutsnet-shared/peliculas/.incoming
+          sudo chmod 0700 /home/gutsnet-shared/peliculas /home/gutsnet-shared/peliculas/.incoming
           sudo bash SERVER/cinema/install.sh --install --skip-packages
           test "$auth_before" = "$(sudo sha256sum /etc/gutsnet/cinema.htpasswd | cut -d ' ' -f1)"
           test "$cert_before" = "$(sha256sum /etc/ssl/certs/gutsnet.crt | cut -d ' ' -f1)"
+          test "$movie_before" = "$(sudo sha256sum /home/gutsnet-shared/peliculas/Prueba_GutsCinema.mp4 | cut -d ' ' -f1)"
           printf '%s\n' "$cinema_password" | bash SERVER/cinema/test.sh --password-stdin
 
           # Una contrasena incorrecta se rechaza sin exponerla en los argumentos.

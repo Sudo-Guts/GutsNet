@@ -68,9 +68,11 @@ function cinemaStorageAvailable(): bool
 
 function cinemaCanManage(): bool
 {
+    $lock = CINEMA_INCOMING . "/.lock";
     return cinemaStorageAvailable() && is_writable(CINEMA_STORAGE)
         && !is_link(CINEMA_INCOMING) && realpath(CINEMA_INCOMING) === CINEMA_INCOMING
-        && is_dir(CINEMA_INCOMING) && is_writable(CINEMA_INCOMING);
+        && is_dir(CINEMA_INCOMING) && is_executable(CINEMA_INCOMING) && is_writable(CINEMA_INCOMING)
+        && !is_link($lock) && (!file_exists($lock) || (is_file($lock) && is_writable($lock)));
 }
 
 function cinemaFileVersion(array $stat): string

@@ -19,9 +19,17 @@ mode="$(stat -c '%a' "$auth")"
 (( (8#$mode & 0007) == 0 )) || fail 'El archivo de cuentas permite acceso a otros usuarios.'
 runuser -u www-data -- test -r "$auth" || fail 'Apache no puede leer las cuentas.'
 runuser -u www-data -- test -r "$storage" && runuser -u www-data -- test -x "$storage" || fail 'Apache no puede leer las peliculas.'
-runuser -u www-data -- test -w "$storage" || fail 'Apache no puede agregar ni eliminar archivos de Cinema.'
-[[ -d "$storage/.incoming" && ! -L "$storage/.incoming" ]] || fail 'Falta el area privada de carga.'
-runuser -u www-data -- test -w "$storage/.incoming" || fail 'Apache no puede recibir archivos de Cinema.'
+runuser -u www-data -- test -w "$storage" || fail 'Apache no puede agregar ni eliminar archivos de Cinema. Ejecuta make install-cinema.'
+[[ -d "$storage/.incoming" && ! -L "$storage/.incoming" ]] || fail 'Falta el area privada de carga. Ejecuta make install-cinema.'
+runuser -u www-data -- test -x "$storage/.incoming" && runuser -u www-data -- test -w "$storage/.incoming" \
+    || fail 'Apache no puede recibir archivos de Cinema. Ejecuta make install-cinema.'
+lock="$storage/.incoming/.lock"
+[[ ! -L "$lock" ]] || fail 'El bloqueo de Cinema no puede ser un enlace simbolico.'
+if [[ -e "$lock" ]]; then
+    [[ -f "$lock" ]] || fail 'El bloqueo de Cinema no es un archivo regular.'
+    runuser -u www-data -- test -w "$lock" \
+        || fail 'Apache no puede abrir el bloqueo de Cinema. Ejecuta make install-cinema.'
+fi
 apache2ctl configtest
 openssl x509 -in "$cert" -noout -checkend 86400 >/dev/null || fail 'El certificado vence pronto o esta vencido.'
 openssl x509 -in "$cert" -noout -checkhost gutsnet.test >/dev/null || fail 'El certificado no cubre gutsnet.test.'
