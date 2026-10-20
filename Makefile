@@ -16,7 +16,14 @@ RSYNC_FLAGS := -rpt --delete --delete-excluded --no-links \
                --exclude=.env.* \
                --exclude=.htpasswd \
                --exclude=*.db \
-               --exclude=*.sqlite
+               --exclude=*.sqlite \
+               --exclude=*.sqlite3 \
+               --exclude=*.sqlite-* \
+               --exclude=*.htpasswd \
+               --exclude=*.key \
+               --exclude=*.pem \
+               --exclude=*.p12 \
+               --exclude=*.pfx
 
 .PHONY: help check preview deploy test test-web
 
