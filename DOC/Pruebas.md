@@ -24,6 +24,18 @@ sudo apache2ctl configtest
 Las comprobaciones deben terminar sin errores. `node` es opcional en el
 servidor de producción, pero útil para validar JavaScript.
 
+Sin iniciar Apache se puede revisar el portafolio:
+
+```bash
+python3 scripts/check-web.py
+node scripts/test-web-ui.cjs
+```
+
+El primer comando verifica enlaces, fragmentos, recursos, IDs y referencias de
+accesibilidad. El segundo prueba la señal sintética, filtros, menú responsive,
+contador y reproductor con APIs DOM mínimas. No abre un navegador ni prueba la
+salida de audio, el video o el diseño renderizado.
+
 ## 2. Publicación
 
 ```bash
@@ -101,6 +113,15 @@ por el video.
 5. Reproducir el video e intentar desplazarse por la línea de tiempo.
 6. Abrir los enlaces a materias y proyectos.
 7. Comprobar en la consola del navegador que no existan errores 404 ni errores de JavaScript.
+8. Cambiar frecuencia y amplitud en la portada; la gráfica debe corresponder a
+   una ventana de un segundo, sin superar la pantalla al ajustar la amplitud.
+9. Probar los cuatro filtros y volver a «Todo el taller»; deben reaparecer los
+   seis proyectos. Recorrer los botones con teclado y comprobar el foco visible.
+10. En móvil, abrir y cerrar el menú, seguir un enlace y cerrar con Escape.
+    Al pasar a escritorio la navegación debe permanecer visible.
+11. Desactivar JavaScript: proyectos, materias, video y enlaces siguen visibles;
+    los filtros se ocultan y los controles de la señal quedan deshabilitados.
+12. Reproducir música y luego el video: la música debe pausarse.
 
 El CV y la biblioteca privada GutsNet Cinema todavía están pendientes.
 Las pruebas de privacidad, autenticación y HTTPS se agregarán cuando estén

@@ -8,6 +8,10 @@ y programación de sockets**. Entorno objetivo: Ubuntu 26.04 LTS.
 ### Web pública (código disponible)
 
 - Sitio personal en HTML, CSS y JavaScript.
+- Identidad pastel de taller: crema, salvia, lavanda, durazno y azul grisáceo.
+- Portada con una señal senoidal sintética ajustable, de un segundo de duración.
+- Catálogo con filtros de hardware, señales, Linux y redes.
+- Navegación adaptable con menú móvil; contenido accesible sin JavaScript.
 - Secciones: presentación, intereses, cuatro materias y enlaces a proyectos.
 - Reproductor musical con dos pistas MP3.
 - Video de demostración MP4 mediante HTML5.
@@ -65,6 +69,19 @@ Los archivos audiovisuales se sirven desde `/home/gutsnet-shared/peliculas`, fue
 Para habilitarlo y comprobar que las URL directas exigen credenciales, sigue [DOC/Instalacion.md](DOC/Instalacion.md).
 
 ## Pruebas
+
+Las comprobaciones del portafolio no requieren Apache ni paquetes de Node:
+
+```bash
+python3 scripts/check-web.py
+node --check C0DE/web/public/assets/js/main.js
+node scripts/test-web-ui.cjs
+```
+
+Verifican recursos y fragmentos locales, referencias de accesibilidad, geometría
+de la señal y comportamiento de filtros, menú, contador y controles de audio.
+Las pruebas de JavaScript usan un DOM mínimo; no comprueban el renderizado
+ni sustituyen las pruebas multimedia en un navegador real.
 
 Consulta [DOC/Pruebas.md](DOC/Pruebas.md) para ejecutar pruebas de sintaxis,
 servicios HTTP, tipos MIME, solicitudes parciales de video y persistencia

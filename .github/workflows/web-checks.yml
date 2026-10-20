@@ -20,6 +20,11 @@ jobs:
           node --check C0DE/web/public/assets/js/main.js
           bash -n scripts/test-web.sh
 
+      - name: Verificar navegación e interacciones del portafolio
+        run: |
+          python3 scripts/check-web.py
+          node scripts/test-web-ui.cjs
+
       - name: Verificar referencias locales HTML y multimedia
         run: |
           python3 - <<'PY'
@@ -62,7 +67,7 @@ jobs:
                   print(f"OK {html.name}: {ref}")
 
           js = (public / "assets/js/main.js").read_text(encoding="utf-8")
-          for relative in re.findall(r'file:\s*["\'](/assets/audio/[^"\']+)["\']', js):
+          for relative in re.findall(r'file:\s*["\'](/?assets/audio/[^"\']+)["\']', js):
               target = public / relative.lstrip("/")
               if not target.is_file():
                   raise SystemExit(f"Falta MP3: {relative}")

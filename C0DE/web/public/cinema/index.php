@@ -81,30 +81,33 @@ function escapeHtml(string $value): string
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#f6f3eb">
     <title>GutsNet Cinema | Biblioteca privada</title>
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
+    <a class="skip-link" href="#contenido">Ir al contenido</a>
     <header class="site-header">
         <div class="container header-content">
-            <a class="logo" href="/">
-                <span class="logo-symbol">G</span>
-                Guts<span>Net</span>
+            <a class="logo" href="../" aria-label="GutsNet, inicio">
+                <span class="logo-symbol" aria-hidden="true">g<span>.</span></span>
+                GutsNet<span class="logo-caption">un taller digital</span>
             </a>
 
             <nav aria-label="Navegación de Cinema">
-                <a href="/">Volver al portafolio</a>
+                <a href="../#multimedia">← Volver al taller</a>
             </nav>
         </div>
     </header>
 
-    <main class="section">
+    <main id="contenido" class="section">
         <div class="container">
             <p class="eyebrow">ACCESO PRIVADO</p>
             <h1 class="section-title">GutsNet Cinema</h1>
             <p class="section-description">
                 Biblioteca multimedia de acceso restringido.
-                Los archivos no forman parte del directorio público del sitio.
+                El rincón de películas del servidor de GutsNet.
             </p>
 
             <?php if (!$storageAvailable): ?>
@@ -151,7 +154,7 @@ function escapeHtml(string $value): string
     <footer class="site-footer">
         <div class="container footer-content">
             <p>© 2026 GutsNet</p>
-            <p>Área privada protegida por Apache.</p>
+            <p>GUTSNET / BIBLIOTECA PRIVADA</p>
         </div>
     </footer>
 </body>
