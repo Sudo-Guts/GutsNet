@@ -14,6 +14,8 @@ instalacion manual posterior en Ubuntu Server.
 | /home/gutsnet-shared/ftp/intercambio | root:gutsnet-files / 2770 | Subida y descarga |
 
 - Usuario FTP: gutsftp, sin sudo, shell /usr/sbin/nologin.
+- Autenticacion PAM dedicada: /etc/pam.d/gutsnet-vsftpd; no se modifica
+  la politica PAM global ni /etc/shells.
 - Acceso de usuarios por lista blanca; no hay FTP anonimo.
 - Grupo gutsnet-files reservado para compartir archivos con el futuro
   usuario SSH restringido; NO tiene acceso a peliculas.
@@ -93,9 +95,9 @@ sin divulgar las contraseñas.
 
 ## Problemas comunes
 
-- Error 530: comprobar la contraseña, la lista autorizada y PAM.
-  Si el sistema incluye pam_shells.so en /etc/pam.d/vsftpd,
-  podria rechazar /usr/sbin/nologin; revisar antes de tocar PAM.
+- Error 530: comprobar la contraseña, la lista autorizada y el archivo
+  /etc/pam.d/gutsnet-vsftpd. La politica dedicada acepta al usuario
+  autorizado con shell nologin; la lista blanca sigue siendo obligatoria.
 - Error de chroot escribible: /ftp debe ser root:root y no escribible;
   escribir solo en /intercambio.
 - Login correcto sin listados: revisar firewall/rango pasivo,

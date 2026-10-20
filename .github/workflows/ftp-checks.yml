@@ -54,14 +54,15 @@ jobs:
               "userlist_enable": "YES",
               "userlist_deny": "NO",
               "ssl_enable": "YES",
+              "pam_service_name": "gutsnet-vsftpd",
               "force_local_logins_ssl": "YES",
               "force_local_data_ssl": "YES",
               "ssl_sslv2": "NO",
               "ssl_sslv3": "NO",
               "ssl_tlsv1": "NO",
-              "ssl_tlsv1_1": "NO",
-              "ssl_tlsv1_2": "YES",
-              "ssl_tlsv1_3": "YES",
+              "ssl_tlsv11": "NO",
+              "ssl_tlsv12": "YES",
+              "ssl_tlsv13": "YES",
               "pasv_enable": "YES",
               "pasv_min_port": "40000",
               "pasv_max_port": "40010",
@@ -69,5 +70,9 @@ jobs:
           for key, value in required.items():
               if values.get(key) != value:
                   raise SystemExit(f"Configuracion insegura o incorrecta: {key}={values.get(key)}")
-          print("OK: FTPS requiere TLS y protege la raiz chroot")
+          pam = Path("SERVER/ftp/pam-gutsnet-vsftpd").read_text(encoding="utf-8")
+          assert "@include common-auth" in pam
+          assert "@include common-account" in pam
+          assert "pam_shells.so" not in pam
+          print("OK: FTPS requiere TLS, chroot y PAM para cuenta nologin")
           PY

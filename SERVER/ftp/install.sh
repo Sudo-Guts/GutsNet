@@ -12,6 +12,8 @@ ftp_user="gutsftp"
 share_group="gutsnet-files"
 ftp_conf="/etc/vsftpd.conf"
 allowlist="/etc/vsftpd.gutsnet-users"
+pam_conf="/etc/pam.d/gutsnet-vsftpd"
+pam_src="$here/pam-gutsnet-vsftpd"
 cert="/etc/ssl/certs/gutsnet.crt"
 key="/etc/ssl/private/gutsnet.key"
 
@@ -31,6 +33,7 @@ HELP
 
 preflight() {
     [[ -f "$source_conf" ]] || die "No existe $source_conf"
+    [[ -f "$pam_src" ]] || die "No existe $pam_src"
     [[ -s "$cert" ]] || die "Falta certificado TLS: $cert"
     [[ -s "$key" ]] || die "Falta llave privada TLS: $key"
     command -v openssl >/dev/null || die "Falta openssl"
@@ -135,6 +138,10 @@ do_install() {
     printf '%s\n' "$ftp_user" > "$allowlist"
     chown root:root "$allowlist"
     chmod 600 "$allowlist"
+    if [[ -e "$pam_conf" ]]; then
+        cp -a "$pam_conf" "$pam_conf.gutsnet-backup-$(date +%Y%m%d-%H%M%S)-$"
+    fi
+    install -o root -g root -m 644 "$pam_src" "$pam_conf"
     install -o root -g root -m 644 "$source_conf" "$ftp_conf"
 
     systemctl enable vsftpd

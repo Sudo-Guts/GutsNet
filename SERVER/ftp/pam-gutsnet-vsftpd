@@ -1,0 +1,9 @@
+# GutsNet FTPS - PAM solo para vsftpd de GutsNet.
+# No modificar /etc/pam.d/vsftpd ni /etc/shells.
+# /usr/sbin/nologin impide SSH/shell normal pero no FTPS.
+# vsftpd ademas admite unicamente gutsftp mediante userlist_deny=NO.
+auth required pam_listfile.so item=user sense=deny file=/etc/ftpusers onerr=succeed
+
+@include common-account
+@include common-session
+@include common-auth
