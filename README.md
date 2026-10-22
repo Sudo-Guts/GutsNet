@@ -8,6 +8,11 @@ y programación de sockets**. Entorno objetivo: Ubuntu 26.04 LTS.
 ### Web pública (código disponible)
 
 - Sitio personal en HTML, CSS y JavaScript.
+- Fondo blanco y acentos pastel en lavanda, azul, verde y durazno.
+- CSS, JavaScript e ilustraciones con versiones por contenido para evitar caché obsoleta.
+- Portada con una señal senoidal sintética ajustable, de un segundo de duración.
+- Catálogo con filtros de hardware, señales, Linux y redes.
+- Navegación adaptable con menú móvil; contenido accesible sin JavaScript.
 - Secciones: presentación, intereses, cuatro materias y enlaces a proyectos.
 - Reproductor musical con dos pistas MP3.
 - Video de demostración MP4 mediante HTML5.
@@ -23,10 +28,9 @@ operativa se realiza desde Ubuntu mediante `make test-web`.
 ### Pendiente
 
 - Incorporar el CV (todavía no disponible).
-- Activar GutsNet Cinema en Ubuntu: los archivos PHP y VirtualHost HTTPS están preparados en el repositorio, pero faltan certificado, credenciales, películas y pruebas en el servidor.
+- Activar GutsCinema en el Ubuntu del usuario mediante `make install-cinema`; el instalador y las pruebas están disponibles en el repositorio.
 - Servicio FTP con directorio compartido.
 - Usuario SSH restringido mediante chroot (el acceso administrador ya fue probado).
-- Clientes y servidores en C: Echo RFC 862 y Daytime RFC 867 (TCP y UDP).
 - Capturas de tráfico y pruebas finales con Wireshark.
 
 ## Estructura
@@ -58,13 +62,66 @@ El destino de `make deploy` se sincroniza con `rsync --delete`:
 Los archivos multimedia privados, el entorno chroot y el área de archivos
 compartidos se almacenarán fuera de la raíz web, en la partición `/home`.
 
-## GutsNet Cinema (configuración pendiente)
+## GutsCinema
 
-Se preparó un catálogo PHP protegido por Apache Basic Auth exclusivamente mediante HTTPS.
-Los archivos audiovisuales se sirven desde `/home/gutsnet-shared/peliculas`, fuera del directorio público.
-Para habilitarlo y comprobar que las URL directas exigen credenciales, sigue [DOC/Instalacion.md](DOC/Instalacion.md).
+Catálogo privado con búsqueda y reproducción de videos mediante Apache y PHP.
+La cuenta protege también las URL directas de los archivos. Las películas se
+almacenan en `/home/gutsnet-shared/peliculas`, fuera de la raíz pública.
+
+```bash
+make install-cinema  # prepara paquetes, TLS, cuenta cine y Apache
+make check-cinema    # revisa configuración y acceso privado
+make test-cinema     # prueba la cuenta y la reproducción parcial
+```
+
+Para importar videos, configurar la confianza HTTPS y acceder desde otros
+equipos, consulta [SERVER/cinema/README.md](SERVER/cinema/README.md).
+La existencia del instalador no implica que ya esté activo en tu Ubuntu.
+
+## Clientes Echo y Daytime hacia servidores externos
+
+Desde la raíz del repositorio:
+
+```bash
+make -C C0DE/sockets echo-remoto MESSAGE="Hola desde GutsNet"
+make -C C0DE/sockets hora-remota
+```
+
+Echo consulta `tcpbin.com:4242` y Daytime consulta `time.nist.gov:13`,
+ambos por TCP. Los comandos compilan su cliente y limitan la consulta completa
+a 10 segundos. El host, el puerto, el mensaje y ese límite son configurables.
+
+Para elegir otros destinos, usar UDP, capturar tráfico y ejecutar las pruebas,
+consulta [SERVER/sockets/README.md](SERVER/sockets/README.md).
 
 ## Pruebas
+
+Las comprobaciones del portafolio no requieren Apache ni paquetes de Node:
+
+```bash
+python3 scripts/check-web.py
+python3 scripts/version-web-assets.py --check
+node --check C0DE/web/public/assets/js/main.js
+node scripts/test-web-ui.cjs
+```
+
+Verifican recursos y fragmentos locales, referencias de accesibilidad, geometría
+de la señal y comportamiento de filtros, menú, contador y controles de audio.
+Las pruebas de JavaScript usan un DOM mínimo; no comprueban el renderizado
+ni sustituyen las pruebas multimedia en un navegador real.
+
+Al modificar CSS, JavaScript o SVG, actualiza las referencias antes de publicar:
+
+```bash
+python3 scripts/version-web-assets.py
+```
+
+`make preview` y `make deploy` comprueban estas versiones. `make test-web`
+compara el HTML, CSS y JavaScript entregados por Apache con los archivos de la
+rama local: HTTP 200 por sí solo ya no basta para aprobar la publicación.
+`GUTSNET_ASSETS_ONLY=1 make test-web` limita la prueba a estos recursos.
+`bash scripts/test-web-publication.sh` prueba esta detección mediante un servidor
+PHP temporal y copias deliberadamente desactualizadas de los recursos.
 
 Consulta [DOC/Pruebas.md](DOC/Pruebas.md) para ejecutar pruebas de sintaxis,
 servicios HTTP, tipos MIME, solicitudes parciales de video y persistencia

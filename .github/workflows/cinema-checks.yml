@@ -1,0 +1,172 @@
+name: GutsCinema en Apache y HTTPS
+
+on:
+  pull_request:
+    paths:
+      - 'SERVER/cinema/**'
+      - 'SERVER/apache/**'
+      - 'C0DE/web/public/**'
+      - 'scripts/version-web-assets.py'
+      - 'scripts/test-cinema-ui.cjs'
+      - 'scripts/test-cinema-browser.cjs'
+      - 'Makefile'
+      - '.github/workflows/cinema-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'SERVER/cinema/**'
+      - 'SERVER/apache/**'
+      - 'C0DE/web/public/**'
+      - 'scripts/version-web-assets.py'
+      - 'scripts/test-cinema-ui.cjs'
+      - 'scripts/test-cinema-browser.cjs'
+      - 'Makefile'
+      - '.github/workflows/cinema-checks.yml'
+
+jobs:
+  cinema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sintaxis y recursos
+        run: |
+          bash -n SERVER/cinema/install.sh
+          bash -n SERVER/cinema/check.sh
+          bash -n SERVER/cinema/test.sh
+          bash -n SERVER/cinema/add.sh
+          for file in C0DE/web/public/cinema/*.php; do php -l "$file"; done
+          python3 -m py_compile SERVER/cinema/test-management.py
+          python3 -m py_compile SERVER/cinema/test-redirects.py
+          node --check C0DE/web/public/assets/js/cinema.js
+          node scripts/test-cinema-ui.cjs
+          node --check scripts/test-cinema-browser.cjs
+          python3 scripts/version-web-assets.py --check
+      - name: Instalar Chromium para probar el formulario real
+        run: |
+          npm install --prefix "$RUNNER_TEMP/cinema-browser" --no-save playwright@1.56.1
+          "$RUNNER_TEMP/cinema-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Verificar escritura en la biblioteca dedicada
+        run: |
+          sudo install -d -o www-data -g www-data -m 770 /home/gutsnet-shared/peliculas
+          sudo runuser -u www-data -- python3 - <<'PY'
+          import os
+          import tempfile
+          path = "/home/gutsnet-shared/peliculas"
+          print("Acceso de escritura:", os.access(path, os.W_OK))
+          fd, name = tempfile.mkstemp(prefix=".prueba-permisos-", dir=path)
+          os.close(fd)
+          os.unlink(name)
+          PY
+      - name: Instalar requisitos de Ubuntu
+        run: |
+          sudo apt-get -qq update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            apache2 apache2-utils php libapache2-mod-php php-sqlite3 openssl rsync curl python3 make
+      - name: Reproducir proteccion de home en Apache reciente
+        run: |
+          sudo install -d -o root -g root -m 755 /etc/systemd/system/apache2.service.d
+          printf '[Service]\nProtectHome=read-only\nMemoryDenyWriteExecute=yes\n' | \
+            sudo tee /etc/systemd/system/apache2.service.d/90-cinema-home-test.conf >/dev/null
+          sudo systemctl daemon-reload
+      - name: Instalar y probar GutsCinema
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cinema_password="$(openssl rand -hex 24)"
+          printf '%s\n' "$cinema_password" | sudo bash SERVER/cinema/install.sh \
+            --install --password-stdin --skip-packages
+          test "$(systemctl show apache2.service --property=ProtectHome --value)" = read-only
+          printf '%s\n' "$cinema_password" | bash SERVER/cinema/test.sh --password-stdin
+          # Sin DNS local: TLS, cookies Secure, Range y gestion por IP literal.
+          cinema_ip="$(hostname -I | awk '{print $1}')"
+          printf '%s\n' "$cinema_password" | bash SERVER/cinema/test.sh --password-stdin --host "$cinema_ip"
+          printf '%s\n' "$cinema_password" | \
+            NODE_PATH="$RUNNER_TEMP/cinema-browser/node_modules" \
+            CINEMA_BROWSER_URL="https://$cinema_ip/cinema/" node scripts/test-cinema-browser.cjs
+          ! sudo grep -q 'Allocation of JIT memory failed' /var/log/apache2/gutsnet_ssl_error.log
+          sudo bash SERVER/cinema/add.sh C0DE/web/public/assets/video/demostracion.mp4 \
+            'Pelicula_<b>&"demo".mp4'
+
+          # Sin la excepcion, la terminal escribe pero Apache oculta la gestion.
+          sudo rm /etc/systemd/system/apache2.service.d/gutsnet-cinema.conf
+          sudo systemctl daemon-reload
+          sudo systemctl restart apache2
+          sudo runuser -u www-data -- test -w /home/gutsnet-shared/peliculas
+          if sudo bash SERVER/cinema/check.sh > "$RUNNER_TEMP/cinema-home.log" 2>&1; then
+            echo 'ERROR: no se detecto Cinema sin escritura dentro del servicio'
+            exit 1
+          fi
+          grep -q 'El servicio de Apache ve Cinema sin escritura' "$RUNNER_TEMP/cinema-home.log"
+          if printf '%s\n' "$cinema_password" | bash SERVER/cinema/test.sh \
+            --password-stdin > "$RUNNER_TEMP/cinema-form.log" 2>&1; then
+            echo 'ERROR: se acepto un catalogo sin formulario de carga'
+            exit 1
+          fi
+          grep -q 'el catálogo no habilitó el formulario de carga' "$RUNNER_TEMP/cinema-form.log"
+          ! grep -q 'Traceback\|StopIteration' "$RUNNER_TEMP/cinema-form.log"
+
+          # Repara directorios inaccesibles y un bloqueo dejado por root.
+          # La reinstalacion conserva medios, certificado y credenciales.
+          auth_before="$(sudo sha256sum /etc/gutsnet/cinema.htpasswd | cut -d ' ' -f1)"
+          cert_before="$(sha256sum /etc/ssl/certs/gutsnet.crt | cut -d ' ' -f1)"
+          movie_before="$(sudo sha256sum /home/gutsnet-shared/peliculas/Prueba_GutsCinema.mp4 | cut -d ' ' -f1)"
+          sudo chown root:root /home/gutsnet-shared/peliculas/.incoming/.lock
+          sudo chmod 0600 /home/gutsnet-shared/peliculas/.incoming/.lock
+          if sudo bash SERVER/cinema/check.sh > "$RUNNER_TEMP/cinema-lock.log" 2>&1; then
+            echo 'ERROR: no se detecto el bloqueo inaccesible'
+            exit 1
+          fi
+          grep -q 'Apache no puede abrir el bloqueo de Cinema' "$RUNNER_TEMP/cinema-lock.log"
+          sudo chown root:root /home/gutsnet-shared/peliculas \
+            /home/gutsnet-shared/peliculas/.incoming
+          sudo chmod 0700 /home/gutsnet-shared/peliculas /home/gutsnet-shared/peliculas/.incoming
+          sudo bash SERVER/cinema/install.sh --install --skip-packages
+          test "$auth_before" = "$(sudo sha256sum /etc/gutsnet/cinema.htpasswd | cut -d ' ' -f1)"
+          test "$cert_before" = "$(sha256sum /etc/ssl/certs/gutsnet.crt | cut -d ' ' -f1)"
+          test "$movie_before" = "$(sudo sha256sum /home/gutsnet-shared/peliculas/Prueba_GutsCinema.mp4 | cut -d ' ' -f1)"
+          printf '%s\n' "$cinema_password" | bash SERVER/cinema/test.sh --password-stdin
+
+          # Una contrasena incorrecta se rechaza sin exponerla en los argumentos.
+          if printf '%s\n' 'credencial-incorrecta-para-prueba' | \
+            bash SERVER/cinema/test.sh --password-stdin > "$RUNNER_TEMP/cinema-wrong.log" 2>&1; then
+            echo 'ERROR: se acepto una contrasena incorrecta'
+            exit 1
+          fi
+          grep -q 'catalogo respondio 401' "$RUNNER_TEMP/cinema-wrong.log"
+
+          # Los archivos ajenos al video y los enlaces simbolicos no se sirven.
+          printf '<?php echo "GUTSCINEMA_PHP_IN_MEDIA"; ?>' | \
+            sudo tee /home/gutsnet-shared/peliculas/prohibido.php >/dev/null
+          sudo ln -s /etc/passwd /home/gutsnet-shared/peliculas/enlace.mp4
+          cinema_request() {
+            printf 'user = "cine:%s"\n' "$cinema_password" | curl --config - \
+              --noproxy '*' --silent --show-error \
+              --cacert /etc/ssl/certs/gutsnet-ca.crt \
+              --resolve gutsnet.test:443:127.0.0.1 "$@"
+          }
+          cinema_request -f -o "$RUNNER_TEMP/cinema-catalog.html" https://gutsnet.test/cinema/
+          python3 - "$RUNNER_TEMP/cinema-catalog.html" <<'PY'
+          from pathlib import Path
+          import sys
+          page = Path(sys.argv[1]).read_text()
+          assert '&lt;b&gt;&amp;&quot;demo&quot;' in page
+          assert '<b>&"demo"' not in page
+          assert 'prohibido.php' not in page and 'enlace.mp4' not in page
+          PY
+          for path in prohibido.php enlace.mp4 Prueba_GutsCinema.mp4/extra.php; do
+            code="$(cinema_request -o "$RUNNER_TEMP/cinema-denied.txt" \
+              -w '%{http_code}' "https://gutsnet.test/cinema/media/$path")"
+            test "$code" = 403 -o "$code" = 404
+            ! grep -q 'GUTSCINEMA_PHP_IN_MEDIA\|root:x:' "$RUNNER_TEMP/cinema-denied.txt"
+          done
+          make test-web
+          unset cinema_password auth_before cert_before
+      - name: Diagnosticar un fallo de instalacion
+        if: failure()
+        run: |
+          sudo stat -c '%A %U:%G %n' /home/gutsnet-shared \
+            /home/gutsnet-shared/peliculas /home/gutsnet-shared/peliculas/.incoming || true
+          sudo runuser -u www-data -- id || true
+          sudo systemctl show apache2.service --property=ProtectHome --property=ProtectSystem \
+            --property=ReadWritePaths || true
+          sudo tail -n 40 /var/log/apache2/gutsnet_ssl_error.log || true

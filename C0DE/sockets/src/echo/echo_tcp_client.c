@@ -1,7 +1,7 @@
 /*
  * GutsNet - Echo TCP client (RFC 862)
  * Usage: echo_tcp_client <host> <port> <message>
- * Receives and prints bytes returned by the Echo server.
+ * Verifies and prints the returned bytes, without waiting for server closure.
  */
 #define _POSIX_C_SOURCE 200809L
 
@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #define BUFFER_SIZE 4096
@@ -54,6 +55,17 @@ static int write_all(int fd, const unsigned char *buf, size_t len)
     return 0;
 }
 
+static void print_destination(const struct addrinfo *addr)
+{
+    char host[128], port[32];
+    if (getnameinfo(addr->ai_addr, addr->ai_addrlen, host, sizeof(host),
+                    port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
+        fprintf(stderr, "Echo TCP -> %s%s%s:%s\n",
+                addr->ai_family == AF_INET6 ? "[" : "", host,
+                addr->ai_family == AF_INET6 ? "]" : "", port);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 4) {
@@ -62,7 +74,7 @@ int main(int argc, char *argv[])
     }
 
     struct addrinfo hints = {0};
-    hints.ai_family = AF_INET;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
     struct addrinfo *resolved = NULL;
@@ -74,20 +86,32 @@ int main(int argc, char *argv[])
 
     int client_fd = -1;
     for (const struct addrinfo *addr = resolved; addr != NULL; addr = addr->ai_next) {
+        print_destination(addr);
         client_fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
         if (client_fd < 0) {
+            perror("socket");
             continue;
         }
         if (connect(client_fd, addr->ai_addr, addr->ai_addrlen) == 0) {
             break;
         }
+        perror("connect");
         close(client_fd);
         client_fd = -1;
     }
     freeaddrinfo(resolved);
 
     if (client_fd < 0) {
-        perror("connect");
+        fprintf(stderr, "No se pudo conectar con ninguna direccion de %s:%s\n",
+                argv[1], argv[2]);
+        return EXIT_FAILURE;
+    }
+
+    struct timeval timeout = {.tv_sec = 5, .tv_usec = 0};
+    if (setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) != 0 ||
+        setsockopt(client_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) != 0) {
+        perror("setsockopt");
+        close(client_fd);
         return EXIT_FAILURE;
     }
 
@@ -107,10 +131,16 @@ int main(int argc, char *argv[])
     }
 
     unsigned char buffer[BUFFER_SIZE];
-    for (;;) {
-        ssize_t received = recv(client_fd, buffer, sizeof(buffer), 0);
+    size_t echoed = 0;
+    while (echoed < message_size) {
+        size_t pending = message_size - echoed;
+        size_t capacity = pending < sizeof(buffer) ? pending : sizeof(buffer);
+        ssize_t received = recv(client_fd, buffer, capacity, 0);
         if (received == 0) {
-            break;
+            fprintf(stderr, "ERROR: eco incompleto (%zu de %zu bytes)\n",
+                    echoed, message_size);
+            close(client_fd);
+            return EXIT_FAILURE;
         }
         if (received < 0) {
             if (errno == EINTR) {
@@ -120,11 +150,17 @@ int main(int argc, char *argv[])
             close(client_fd);
             return EXIT_FAILURE;
         }
+        if (memcmp(buffer, message + echoed, (size_t)received) != 0) {
+            fprintf(stderr, "ERROR: el eco recibido no coincide con el mensaje enviado\n");
+            close(client_fd);
+            return EXIT_FAILURE;
+        }
         if (write_all(STDOUT_FILENO, buffer, (size_t)received) != 0) {
             perror("write");
             close(client_fd);
             return EXIT_FAILURE;
         }
+        echoed += (size_t)received;
     }
 
     close(client_fd);

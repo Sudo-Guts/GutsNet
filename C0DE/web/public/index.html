@@ -1,46 +1,31 @@
-
 <!DOCTYPE html>
 <html lang="es-MX">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-          content="GutsNet: portafolio de electrónica, programación y proyectos académicos.">
-
-    <title>GutsNet | Portafolio</title>
-
-    <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/main.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="El taller digital de Gustavo Ruiz Luis. Electrónica, RISC-V, procesamiento de señales y proyectos en Linux, desde la Universidad Tecnológica de la Mixteca.">
+    <meta name="theme-color" content="#ffffff">
+    <title>GutsNet | El taller de Gustavo</title>
+    <link rel="icon" href="assets/img/favicon.svg?v=2ca871dd7910" type="image/svg+xml">
+    <link rel="stylesheet" href="assets/css/style.css?v=8bddbe37b28e">
+    <script src="assets/js/main.js?v=361af7270b46" defer></script>
 </head>
-
 <body>
-    <a class="skip-link" href="#inicio">
-        Ir al contenido
-    </a>
-
-    <!-- ========================================================
-         Audio
-         ======================================================== -->
-
+    <a class="skip-link" href="#inicio">Ir al contenido</a>
     <audio id="musica-ambiental" preload="none"></audio>
-
-    <!-- ========================================================
-         Navegación
-         ======================================================== -->
 
     <header class="site-header">
         <div class="container header-content">
-            <a class="logo" href="#inicio">
-                <span class="logo-symbol">G</span>
-                Guts<span>Net</span>
+            <a class="logo" href="#inicio" aria-label="GutsNet, inicio">
+                <span class="logo-symbol" aria-hidden="true">g<span>.</span></span>
+                GutsNet<span class="logo-caption">hardware<br>y software</span>
             </a>
-
-            <nav aria-label="Navegación principal">
-                <a href="#inicio">Inicio</a>
+            <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav" hidden>Menú <span aria-hidden="true">+</span></button>
+            <nav id="main-nav" aria-label="Navegación principal">
+                <a href="#inicio" aria-current="location">Inicio</a>
                 <a href="#sobre-mi">Sobre mí</a>
-                <a href="#materias">Materias</a>
                 <a href="#proyectos">Proyectos</a>
+                <a href="#materias">Materias</a>
                 <a href="#cv">CV</a>
                 <a href="#multimedia">Multimedia</a>
             </nav>
@@ -48,541 +33,141 @@
     </header>
 
     <main id="inicio">
-
-        <!-- ====================================================
-             Presentación
-             ==================================================== -->
-
-        <section class="hero">
-            <div class="container hero-grid">
-
-                <div class="hero-content">
-                    <p class="eyebrow">
-                        INGENIERÍA EN ELECTRÓNICA
-                    </p>
-
-                    <h1>
-                        Electrónica, código
-                        y <span class="accent">creatividad.</span>
-                    </h1>
-
-                    <p class="hero-description">
-                        Bienvenido a GutsNet, mi espacio para
-                        compartir proyectos, conocimientos y
-                        experiencias en el desarrollo de
-                        sistemas electrónicos.
-                    </p>
-
-                    <div class="hero-actions">
-                        <a class="button primary" href="#proyectos">
-                            Explorar proyectos
-                        </a>
-
-                        <a class="button secondary" href="#sobre-mi">
-                            Conocer más
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Panel tecnológico -->
-
-                <aside class="hero-panel"
-                       aria-label="Áreas de interés">
-
-                    <div class="panel-header">
-                        <span class="status-dot"></span>
-                        SISTEMAS EN DESARROLLO
-                    </div>
-
-                    <div class="panel-body">
-                        <p class="panel-label">
-                            Áreas de trabajo
-                        </p>
-
-                        <h2>Hardware + Software</h2>
-
-                        <div class="tech-row">
-                            <span>RISC-V</span>
-                            <span>FPGA</span>
-                            <span>C / C++</span>
-                            <span>Verilog</span>
-                            <span>VHDL</span>
-                            <span>Linux</span>
+        <section class="hero" aria-labelledby="hero-title">
+            <div class="container">
+                <div class="hero-topline mono"><span>GUSTAVO RUIZ LUIS <span class="topline-separator">/</span> @SUDO-GUTS</span><span>INGENIERÍA EN ELECTRÓNICA</span></div>
+                <div class="hero-grid">
+                    <div class="hero-content">
+                        <p class="eyebrow"><span class="small-cross" aria-hidden="true">+</span> MI RINCÓN DE INTERNET</p>
+                        <h1 id="hero-title">Entre circuitos<br>y <em>código.</em></h1>
+                        <p class="hero-description">Soy Gustavo. Estudio Electrónica en la UTM y me gusta entender qué pasa por dentro: de un circuito, de un procesador y de las herramientas que uso todos los días.</p>
+                        <div class="hero-actions">
+                            <a class="button primary" href="#proyectos">Ver mis proyectos <span aria-hidden="true">↗</span></a>
+                            <a class="text-link" href="https://github.com/Sudo-Guts" target="_blank" rel="noopener noreferrer">Mi GitHub <span aria-hidden="true">↗</span></a>
                         </div>
+                        <p class="hero-footnote mono"><span>C / C++</span><span>RISC-V / FPGA</span><span>Linux</span></p>
+                    </div>
 
-                        <!-- Reproductor de música -->
-
-                        <div class="music-player">
-                            <div class="music-info">
-                                <span id="music-title"
-                                      aria-live="polite">
-                                    Música ambiental 1
-                                </span>
+                    <div class="workbench">
+                        <div class="bench-heading mono"><span>SEÑALES / MI MESA DE PRUEBAS</span><span aria-hidden="true">Interactivo</span></div>
+                        <div class="oscilloscope">
+                            <div class="scope-heading"><span class="mono">GENERA TU PROPIA SEÑAL</span><span class="scope-led" aria-hidden="true"></span></div>
+                            <svg class="scope-display" viewBox="0 0 480 230" role="img" aria-labelledby="signal-title signal-description">
+                                <title id="signal-title">Señal senoidal de prueba</title>
+                                <desc id="signal-description">Dos ciclos de una senoide, de amplitud 0.6, durante un segundo. Los controles permiten cambiar frecuencia y amplitud.</desc>
+                                <defs><pattern id="scope-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#d8deee" stroke-opacity=".7" stroke-width="1"/></pattern></defs>
+                                <rect width="480" height="230" rx="6" fill="#f8f9fd"/>
+                                <rect x="20" y="15" width="440" height="200" fill="url(#scope-grid)"/>
+                                <path d="M20 115H460M240 15V215" fill="none" stroke="#b9c2d8" stroke-opacity=".7" stroke-dasharray="3 5"/>
+                                <path id="signal-path" d="M20,115.00 L25,108.17 L30,101.48 L35,95.06 L40,89.05 L45,83.57 L50,78.72 L55,74.62 L60,71.34 L65,68.94 L70,67.49 L75,67.00 L80,67.49 L85,68.94 L90,71.34 L95,74.62 L100,78.72 L105,83.57 L110,89.05 L115,95.06 L120,101.48 L125,108.17 L130,115.00 L135,121.83 L140,128.52 L145,134.94 L150,140.95 L155,146.43 L160,151.28 L165,155.38 L170,158.66 L175,161.06 L180,162.51 L185,163.00 L190,162.51 L195,161.06 L200,158.66 L205,155.38 L210,151.28 L215,146.43 L220,140.95 L225,134.94 L230,128.52 L235,121.83 L240,115.00 L245,108.17 L250,101.48 L255,95.06 L260,89.05 L265,83.57 L270,78.72 L275,74.62 L280,71.34 L285,68.94 L290,67.49 L295,67.00 L300,67.49 L305,68.94 L310,71.34 L315,74.62 L320,78.72 L325,83.57 L330,89.05 L335,95.06 L340,101.48 L345,108.17 L350,115.00 L355,121.83 L360,128.52 L365,134.94 L370,140.95 L375,146.43 L380,151.28 L385,155.38 L390,158.66 L395,161.06 L400,162.51 L405,163.00 L410,162.51 L415,161.06 L420,158.66 L425,155.38 L430,151.28 L435,146.43 L440,140.95 L445,134.94 L450,128.52 L455,121.83 L460,115.00" fill="none" stroke="#9875cd" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                <g fill="#747e97" font-size="10" font-family="monospace"><text x="28" y="32">CH 1 / SENO</text><text x="28" y="204">0 s</text><text x="428" y="204">1 s</text></g>
+                            </svg>
+                            <div class="scope-controls">
+                                <label for="signal-frequency">Frecuencia <output id="frequency-value" for="signal-frequency">2 Hz</output><input id="signal-frequency" type="range" disabled min="1" max="5" step="0.5" value="2"></label>
+                                <label for="signal-amplitude">Amplitud <output id="amplitude-value" for="signal-amplitude">0.6</output><input id="signal-amplitude" type="range" disabled min="0.1" max="1" step="0.1" value="0.6"></label>
                             </div>
-
-                            <div class="music-controls">
-                                <button id="music-toggle"
-                                        type="button"
-                                        aria-pressed="false">
-                                    Reproducir
-                                </button>
-
-                                <button id="music-next"
-                                        type="button"
-                                        aria-label="Siguiente canción">
-                                    Siguiente →
-                                </button>
-                            </div>
-
-                            <label for="music-volume">
-                                Volumen
-                            </label>
-
-                            <input id="music-volume"
-                                   type="range"
-                                   min="0"
-                                   max="100"
-                                   value="20"
-                                   aria-label="Volumen de música">
+                            <p class="scope-caption mono">x(t) = A · sin(2πft) / VENTANA DE 1 s</p>
+                        </div>
+                        <div class="bench-notes">
+                            <div class="chip-note"><span class="chip-mark" aria-hidden="true">RV<br>32I</span><span class="mono">hardware<br>+ software</span></div>
+                            <p class="hand-note">A veces en la protoboard.<br>A veces en la terminal.</p>
                         </div>
                     </div>
-
-                    <!-- Contador de visitas -->
-
-                    <div class="panel-footer">
-                        <span>GUTSNET / PORTFOLIO</span>
-
-                        <div class="visits-indicator">
-                            <span class="visits-label">
-                                VISITAS
-                            </span>
-
-                            <strong id="contador-visitas"
-                                    aria-live="polite">
-                                Cargando...
-                            </strong>
-                        </div>
-                    </div>
-                </aside>
+                </div>
+                <div class="hero-bottom mono"><span><span class="status-dot" aria-hidden="true"></span> UN PORTAFOLIO EN CONSTRUCCIÓN, COMO MIS PROYECTOS.</span><a href="#proyectos">EXPLORAR <span aria-hidden="true">↓</span></a></div>
             </div>
         </section>
 
-        <!-- ====================================================
-             Sobre mí
-             ==================================================== -->
-
-        <section id="sobre-mi" class="section">
-            <div class="container">
-                <p class="eyebrow">PERFIL</p>
-
-                <h2 class="section-title">
-                    Sobre mí
-                </h2>
-
-                <div class="about-grid">
-                    <div class="card">
-                        <h3>Hola, soy Gustavo.</h3>
-
-                        <p>
-                            Soy estudiante de Ingeniería en
-                            Electrónica en la Universidad
-                            Tecnológica de la Mixteca.
-                            Me interesa el desarrollo de hardware,
-                            los sistemas digitales y la programación.
-                        </p>
-                    </div>
-
-                    <div class="card">
-                        <h3>Mis intereses</h3>
-
-                        <p>
-                            Diseño de procesadores, sistemas
-                            embebidos, microcontroladores,
-                            FPGA y herramientas de desarrollo
-                            en Linux.
-                        </p>
-                    </div>
+        <section id="sobre-mi" class="section about-section" aria-labelledby="about-title">
+            <div class="container about-layout">
+                <div><p class="eyebrow">01 / QUIÉN ESTÁ DETRÁS</p><h2 id="about-title">Hola, soy Gustavo.<br><em>También, Guts.</em></h2></div>
+                <div class="about-copy">
+                    <p class="lead">Estudio Ingeniería en Electrónica en la Universidad Tecnológica de la Mixteca. Mi mesa suele estar entre el hardware y el software.</p>
+                    <p>Me interesan los procesadores RISC-V, las FPGA, los sistemas embebidos y el procesamiento de señales. También tengo mi lado Linux: configurar el entorno y escribir herramientas para trabajar a mi manera es parte de lo que disfruto.</p>
+                    <p>GutsNet es donde voy reuniendo proyectos, materias y pruebas. Hay cosas en desarrollo; los repositorios muestran qué hay hecho y qué falta.</p>
+                    <div class="toolbox"><span class="mono">EN MI CAJA DE HERRAMIENTAS</span><ul class="tag-list" aria-label="Herramientas y áreas de trabajo"><li>C / C++</li><li>Verilog / VHDL</li><li>KiCad</li><li>MATLAB</li><li>Linux / Zsh</li><li>Git</li></ul></div>
                 </div>
             </div>
         </section>
 
-        <!-- ====================================================
-             Materias
-             ==================================================== -->
-
-        <section id="materias" class="section alternate">
+        <section id="proyectos" class="section projects-section" aria-labelledby="projects-title">
             <div class="container">
-                <p class="eyebrow">
-                    FORMACIÓN ACADÉMICA
-                </p>
+                <div class="section-heading"><div><p class="eyebrow">02 / CON LAS MANOS EN EL CÓDIGO</p><h2 id="projects-title">Lo que voy <em>construyendo.</em></h2></div><p>Del esquemático al repositorio.<br>Los avances y pendientes van incluidos.</p></div>
+                <div class="project-filters" role="group" aria-label="Filtrar proyectos" hidden>
+                    <button type="button" data-filter="all" aria-pressed="true">Todo el taller</button>
+                    <button type="button" data-filter="hardware" aria-pressed="false">Hardware</button>
+                    <button type="button" data-filter="senales" aria-pressed="false">Señales</button>
+                    <button type="button" data-filter="linux" aria-pressed="false">Linux y redes</button>
+                </div>
+                <p class="sr-only" id="filter-status" role="status"></p>
 
-                <h2 class="section-title">
-                    Materias
-                </h2>
-
-                <p class="section-description">
-                    Asignaturas que curso actualmente en
-                    Ingeniería en Electrónica, con sus
-                    prácticas y proyectos.
-                </p>
-
-                <div class="card-grid subject-grid">
-
-                    <!-- Redes de Computadoras -->
-
-                    <article class="card subject-card">
-                        <span class="card-number">01</span>
-
-                        <h3>Redes de Computadoras</h3>
-
-                        <p>
-                            Redes, protocolos y comunicación
-                            entre sistemas.
-                        </p>
-
-                        <a class="project-link"
-                           href="materias.html#redes">
-                            Ver materia →
-                        </a>
+                <div class="project-grid">
+                    <article class="project-card project-featured" data-category="hardware senales">
+                        <div class="project-visual vox-visual" aria-hidden="true">
+                            <div class="visual-topline mono"><span>VoxID</span><span>SEÑAL → DATOS</span></div>
+                            <svg viewBox="0 0 540 190" fill="none"><path d="M20 95H520" stroke="#78638c" stroke-opacity=".25"/><path d="M20 95L35 93L43 99L52 87L59 102L68 89L76 100L84 68L92 126L100 44L108 143L116 32L124 154L132 55L140 121L148 83L156 102L164 87L172 99L180 95H200" stroke="#71558c" stroke-width="2.5" stroke-linejoin="round"/><rect x="222" y="62" width="92" height="66" rx="6" fill="#ffffff" stroke="#8c759f"/><text x="268" y="101" fill="#5e4977" text-anchor="middle" font-family="monospace" font-size="19">ADC</text><path d="M201 95H221M315 95H341" stroke="#78638c" stroke-width="2"/><g stroke="#71558c" stroke-width="7" stroke-linecap="round"><path d="M361 126V111M381 126V78M401 126V45M421 126V88M441 126V64M461 126V101M481 126V114M501 126V119"/></g><g fill="#6e597f" font-family="monospace" font-size="11"><text x="72" y="179">VOZ</text><text x="238" y="179">MUESTRAS</text><text x="396" y="179">ESPECTRO</text></g></svg>
+                            <span class="visual-caption mono">APUNTE DEL RECORRIDO DE LA SEÑAL</span>
+                        </div>
+                        <div class="project-content"><div class="project-meta mono"><span>01 / VOZ Y SISTEMAS EMBEBIDOS</span><span class="project-state">En desarrollo</span></div><h3>VoxID</h3><p>Un sistema de identificación de hablante. El recorrido empieza en el micrófono: acondicionar la voz, adquirirla y extraer características para trabajar con ella en digital.</p><ul class="tag-list"><li>Filtros</li><li>ADC</li><li>MFCC</li><li>C / KiCad</li></ul><a class="project-link" href="https://github.com/Sudo-Guts/VoxID" target="_blank" rel="noopener noreferrer">Seguir el desarrollo de VoxID <span aria-hidden="true">↗</span></a></div>
                     </article>
 
-                    <!-- Microcontroladores Avanzados -->
-
-                    <article class="card subject-card">
-                        <span class="card-number">02</span>
-
-                        <h3>Microcontroladores Avanzados</h3>
-
-                        <p>
-                            Programación de microcontroladores
-                            y sistemas embebidos.
-                        </p>
-
-                        <a class="project-link"
-                           href="materias.html#microcontroladores">
-                            Ver materia →
-                        </a>
+                    <article class="project-card" data-category="hardware">
+                        <div class="project-visual cpu-visual" aria-hidden="true"><span class="mono visual-topline">02 / ARQUITECTURA DE COMPUTADORAS</span><div class="cpu-diagram"><span>fetch</span><span>decode</span><span>execute</span></div><strong class="visual-word">RV32I<span>32 bits. Instrucción a instrucción.</span></strong></div>
+                        <div class="project-content"><div class="project-meta mono"><span>RISC-V / FPGA</span></div><h3>Un procesador por dentro</h3><p>Diseño de una CPU basada en RV32I. Una forma de entender cómo una instrucción se convierte en operaciones, señales de control y movimiento de datos.</p><a class="project-link" href="https://github.com/Sudo-Guts/RV32I-Monocilo" target="_blank" rel="noopener noreferrer">Abrir RV32I <span aria-hidden="true">↗</span></a></div>
                     </article>
 
-                    <!-- Procesamiento de Señales -->
-
-                    <article class="card subject-card">
-                        <span class="card-number">03</span>
-
-                        <h3>Procesamiento de Señales</h3>
-
-                        <p>
-                            Análisis y procesamiento
-                            de señales digitales.
-                        </p>
-
-                        <a class="project-link"
-                           href="materias.html#senales">
-                            Ver materia →
-                        </a>
+                    <article class="project-card" data-category="hardware senales">
+                        <div class="project-visual spwm-visual" aria-hidden="true"><span class="mono visual-topline">03 / ELECTRÓNICA DE POTENCIA</span><svg viewBox="0 0 420 120" fill="none"><path d="M15 60C45 -3 75 -3 105 60S165 123 195 60S255 -3 285 60S345 123 375 60" stroke="#755a45" stroke-width="2.5"/><path d="M15 60H28V22H44V60H49V22H68V60H73V22H91V60H100V22H111V60H127V98H143V60H148V98H167V60H172V98H190V60H199V98H210V60H226V22H242V60H247V22H266V60H271V22H289V60H298V22H309V60H325V98H341V60H346V98H365V60H370V98H389V60H405" stroke="#aa8061" stroke-width="1.5" stroke-opacity=".6"/></svg><span class="visual-caption mono">SENO + CONMUTACIÓN</span></div>
+                        <div class="project-content"><div class="project-meta mono"><span>CONTROL / ATmega328P</span><span class="project-state">En desarrollo</span></div><h3>Inversor trifásico SPWM</h3><p>Modulación senoidal por ancho de pulso para controlar una etapa de potencia trifásica. Firmware, simulación y diseño de la placa en el mismo proyecto.</p><a class="project-link" href="https://github.com/Sudo-Guts/SPWM" target="_blank" rel="noopener noreferrer">Abrir SPWM <span aria-hidden="true">↗</span></a></div>
                     </article>
 
-                    <!-- Máquinas Eléctricas -->
+                    <article class="project-card" data-category="linux">
+                        <div class="project-visual terminal-visual" aria-hidden="true"><span class="mono visual-topline">04 / MI ENTORNO</span><div class="terminal-lines mono"><span><b>guts</b>@linux <i>~</i></span><span>$ nvim main.c<span class="terminal-cursor">▍</span></span><span class="terminal-comment"># que el entorno también sea mío</span></div></div>
+                        <div class="project-content"><div class="project-meta mono"><span>LINUX / ZSH / NEOVIM</span></div><h3>Dotfiles</h3><p>Mi entorno de desarrollo en Debian y Ubuntu. Configuraciones, funciones de shell y herramientas para programar, compilar y simular desde la terminal.</p><a class="project-link" href="https://github.com/Sudo-Guts/Dotfiles" target="_blank" rel="noopener noreferrer">Asomarse a mis dotfiles <span aria-hidden="true">↗</span></a></div>
+                    </article>
 
-                    <article class="card subject-card">
-                        <span class="card-number">04</span>
+                    <article class="project-card" data-category="linux">
+                        <div class="project-visual network-visual" aria-hidden="true"><span class="mono visual-topline">05 / ESTA MISMA PÁGINA</span><div class="network-diagram mono"><span>cliente</span><b>↔</b><span>GutsNet</span><b>↔</b><span>servidor</span></div><span class="visual-caption mono">HTTP · SSH · FTP · SOCKETS EN C</span></div>
+                        <div class="project-content"><div class="project-meta mono"><span>REDES / SERVIDORES</span></div><h3>GutsNet</h3><p>El laboratorio que sostiene este espacio: una web con Apache, servicios en Linux y clientes y servidores Echo y Daytime escritos en C.</p><a class="project-link" href="https://github.com/Sudo-Guts/GutsNet" target="_blank" rel="noopener noreferrer">Ver qué hay detrás <span aria-hidden="true">↗</span></a></div>
+                    </article>
 
-                        <h3>Máquinas Eléctricas</h3>
-
-                        <p>
-                            Estudio y funcionamiento
-                            de motores y generadores eléctricos.
-                        </p>
-
-                        <a class="project-link"
-                           href="materias.html#maquinas">
-                            Ver materia →
-                        </a>
+                    <article class="project-card project-compact" data-category="hardware">
+                        <div class="project-content"><div class="project-meta mono"><span>06 / ROBÓTICA · C / AVR</span></div><h3>Seguidor de línea</h3><p>Un robot con ATmega328P. El repositorio está creado; todavía falta publicar los archivos del proyecto.</p><a class="project-link" href="https://github.com/Sudo-Guts/SeguidorLinea" target="_blank" rel="noopener noreferrer">Ver repositorio <span aria-hidden="true">↗</span></a></div><div class="line-track" aria-hidden="true"><svg viewBox="0 0 190 90" fill="none"><path d="M0 65H60C85 65 75 25 100 25H190" stroke="#678171" stroke-width="4" stroke-dasharray="7 6"/><rect x="89" y="13" width="28" height="24" rx="6" fill="#e2ebd9" stroke="#435c4c" stroke-width="2"/><circle cx="109" cy="25" r="3" fill="#435c4c"/></svg></div>
                     </article>
                 </div>
             </div>
         </section>
 
-        <!-- ====================================================
-             Proyectos
-             ==================================================== -->
-
-        <section id="proyectos" class="section">
-            <div class="container">
-                <p class="eyebrow">
-                    HARDWARE Y SOFTWARE
-                </p>
-
-                <h2 class="section-title">
-                    Proyectos
-                </h2>
-
-                <p class="section-description">
-                    Repositorios de desarrollo electrónico,
-                    programación y herramientas personales.
-                </p>
-
-                <div class="card-grid">
-
-                    <!-- RV32I -->
-
-                    <article class="card project-card">
-                        <div class="project-art">
-                            RV32I
-                        </div>
-
-                        <div class="project-content">
-                            <h3>Procesador RISC-V</h3>
-
-                            <p>
-                                Diseño y desarrollo de un
-                                procesador basado en la
-                                arquitectura RV32I.
-                            </p>
-
-                            <span class="card-tag">
-                                FPGA / CPU
-                            </span>
-
-                            <p>
-                                <a class="project-link"
-                                   href="https://github.com/Sudo-Guts/RV32I-Monocilo"
-                                   target="_blank"
-                                   rel="noopener noreferrer">
-                                    Ver repositorio ↗
-                                </a>
-                            </p>
-                        </div>
-                    </article>
-
-                    <!-- SPWM -->
-
-                    <article class="card project-card">
-                        <div class="project-art">
-                            SPWM
-                        </div>
-
-                        <div class="project-content">
-                            <h3>SPWM</h3>
-
-                            <p>
-                                Proyecto relacionado con la
-                                generación de modulación
-                                por ancho de pulso senoidal.
-                            </p>
-
-                            <span class="card-tag">
-                                Electrónica
-                            </span>
-
-                            <p>
-                                <a class="project-link"
-                                   href="https://github.com/Sudo-Guts/SPWM"
-                                   target="_blank"
-                                   rel="noopener noreferrer">
-                                    Ver repositorio ↗
-                                </a>
-                            </p>
-                        </div>
-                    </article>
-
-                    <!-- Seguidor de Línea -->
-
-                    <article class="card project-card">
-                        <div class="project-art">
-                            AVR
-                        </div>
-
-                        <div class="project-content">
-                            <h3>Seguidor de Línea</h3>
-
-                            <p>
-                                Robot seguidor de línea
-                                desarrollado con el
-                                microcontrolador ATmega328P.
-                            </p>
-
-                            <span class="card-tag">
-                                C / AVR
-                            </span>
-
-                            <p>
-                                <a class="project-link"
-                                   href="https://github.com/Sudo-Guts/SeguidorLinea"
-                                   target="_blank"
-                                   rel="noopener noreferrer">
-                                    Ver repositorio ↗
-                                </a>
-                            </p>
-                        </div>
-                    </article>
-
-                    <!-- Dotfiles -->
-
-                    <article class="card project-card">
-                        <div class="project-art">
-                            LINUX
-                        </div>
-
-                        <div class="project-content">
-                            <h3>Dotfiles</h3>
-
-                            <p>
-                                Configuraciones y herramientas
-                                personales para el entorno Linux.
-                            </p>
-
-                            <span class="card-tag">
-                                Linux / Neovim
-                            </span>
-
-                            <p>
-                                <a class="project-link"
-                                   href="https://github.com/Sudo-Guts/Dotfiles"
-                                   target="_blank"
-                                   rel="noopener noreferrer">
-                                    Ver repositorio ↗
-                                </a>
-                            </p>
-                        </div>
-                    </article>
-
-                    <!-- VoxID -->
-
-                    <article class="card project-card">
-                        <div class="project-art">
-                            VoxID
-                        </div>
-
-                        <div class="project-content">
-                            <h3>VoxID</h3>
-
-                            <p>
-                                Repositorio de un proyecto
-                                cuya documentación está pendiente.
-                            </p>
-
-                            <span class="card-tag">
-                                En preparación
-                            </span>
-
-                            <p>
-                                <a class="project-link"
-                                   href="https://github.com/Sudo-Guts/VoxID"
-                                   target="_blank"
-                                   rel="noopener noreferrer">
-                                    Ver repositorio ↗
-                                </a>
-                            </p>
-                        </div>
-                    </article>
+        <section id="materias" class="section subjects-section" aria-labelledby="subjects-title">
+            <div class="container subjects-layout">
+                <div class="subjects-intro"><p class="eyebrow">03 / ENTRE CLASE Y CLASE</p><h2 id="subjects-title">La otra parte<br>del <em>taller.</em></h2><p>Las materias que curso actualmente. Un espacio para ir reuniendo prácticas y apuntes sin mezclarlos con el catálogo de proyectos.</p><a class="text-link" href="materias.html">Ir al cuaderno de materias <span aria-hidden="true">↗</span></a></div>
+                <div class="subject-list">
+                    <a class="subject-row" href="materias.html#redes"><span class="mono">01</span><div><h3>Redes de Computadoras</h3><p>Protocolos, servicios y comunicación.</p></div><span aria-hidden="true">↗</span></a>
+                    <a class="subject-row" href="materias.html#microcontroladores"><span class="mono">02</span><div><h3>Microcontroladores Avanzados</h3><p>Periféricos, temporización y sistemas embebidos.</p></div><span aria-hidden="true">↗</span></a>
+                    <a class="subject-row" href="materias.html#senales"><span class="mono">03</span><div><h3>Procesamiento de Señales</h3><p>Del dominio del tiempo al de la frecuencia.</p></div><span aria-hidden="true">↗</span></a>
+                    <a class="subject-row" href="materias.html#maquinas"><span class="mono">04</span><div><h3>Máquinas Eléctricas</h3><p>Motores, generadores y conversión de energía.</p></div><span aria-hidden="true">↗</span></a>
                 </div>
             </div>
         </section>
 
-        <!-- ====================================================
-             Currículum
-             ==================================================== -->
-
-        <section id="cv" class="section alternate">
-            <div class="container">
-                <div class="feature-card">
-                    <div>
-                        <p class="eyebrow">
-                            TRAYECTORIA
-                        </p>
-
-                        <h2>Currículum vitae</h2>
-
-                        <p>
-                            Formación académica, habilidades
-                            técnicas y experiencia en proyectos.
-                            Próximamente estará disponible
-                            mi currículum en PDF.
-                        </p>
-                    </div>
-
-                    <span class="feature-icon"
-                          aria-hidden="true">
-                        CV
-                    </span>
-                </div>
-            </div>
+        <section id="cv" class="section cv-section" aria-labelledby="cv-title">
+            <div class="container cv-layout"><span class="cv-stamp mono" aria-hidden="true">G R L<br>CURRICULUM<br>VITAE</span><div><p class="eyebrow">04 / EL PERFIL FORMAL</p><h2 id="cv-title">Mi perfil <em>técnico.</em></h2><p>Mi formación, herramientas y experiencia en proyectos. El CV en PDF todavía está pendiente; por ahora puedes conocer mi trabajo en los repositorios.</p></div><a class="button secondary" href="https://github.com/Sudo-Guts" target="_blank" rel="noopener noreferrer">Ver mi trabajo <span aria-hidden="true">↗</span></a></div>
         </section>
 
-        <!-- ====================================================
-             Multimedia
-             ==================================================== -->
-
-        <section id="multimedia" class="section">
+        <section id="multimedia" class="section multimedia-section" aria-labelledby="media-title">
             <div class="container">
-                <p class="eyebrow">
-                    CONTENIDO MULTIMEDIA
-                </p>
-
-                <h2 class="section-title">
-                    Multimedia
-                </h2>
-
-                <p class="section-description">
-                    Demostraciones de proyectos electrónicos
-                    y contenido multimedia de GutsNet.
-                </p>
-
-                <div class="about-grid">
-
-                    <!-- Videos de proyectos -->
-
-                    <div class="card multimedia-card">
-                        <h3>Videos de proyectos</h3>
-
-                        <p>
-                            Demostraciones del funcionamiento
-                            de mis proyectos electrónicos.
-                        </p>
-
-                        <video class="project-video"
-                               controls
-                               preload="metadata"
-                               playsinline>
-                            <source
-                                src="assets/video/demostracion.mp4"
-                                type="video/mp4">
-
-                            Tu navegador no admite video HTML5.
-                        </video>
-                    </div>
-
-                    <!-- Biblioteca privada -->
-
-                    <div class="card multimedia-card">
-                        <h3>GutsNet Cinema</h3>
-
-                        <p>
-                            Biblioteca multimedia privada
-                            con acceso mediante usuario
-                            y contraseña.
-                        </p>
-
-                        <a class="project-link" href="/cinema/">
-                            Entrar a GutsNet Cinema →
-                        </a>
+                <div class="section-heading"><div><p class="eyebrow">05 / CAMBIAR DE FRECUENCIA</p><h2 id="media-title">También hay <em>pausas.</em></h2></div><p>Un video, música de fondo<br>y el rincón multimedia de GutsNet.</p></div>
+                <div class="media-layout">
+                    <div class="video-block"><video class="project-video" controls preload="none" playsinline poster="assets/img/video-poster.svg?v=68c2f450ee5a"><source src="assets/video/demostracion.mp4" type="video/mp4">Tu navegador no admite video HTML5.</video><div class="video-caption"><h3>Video de demostración</h3><span class="mono">GUTSNET / MULTIMEDIA</span></div></div>
+                    <div class="media-sidebar">
+                        <section class="music-player" aria-labelledby="music-heading"><div class="music-heading"><span class="record" aria-hidden="true"></span><div><p class="eyebrow">PARA ACOMPAÑAR EL CÓDIGO</p><h3 id="music-heading">Un poco de música</h3></div></div><p id="music-title" aria-live="polite">Música ambiental 1</p><div class="music-controls"><button id="music-toggle" type="button" aria-pressed="false">Reproducir</button><button id="music-next" type="button" aria-label="Siguiente pista">Siguiente <span aria-hidden="true">→</span></button></div><label class="volume-label" for="music-volume">Volumen<input id="music-volume" type="range" min="0" max="100" value="20"></label><p class="player-note mono">DALE PLAY CUANDO QUIERAS.</p></section>
+                        <div class="cinema-note"><span class="mono">FUNCIÓN PRIVADA</span><h3>GutsCinema</h3><p>Mi biblioteca privada de videos. Una sala de cine dentro de GutsNet, con acceso mediante cuenta y contraseña.</p><a class="text-link" href="cinema/">Entrar a GutsCinema <span aria-hidden="true">↗</span></a></div>
                     </div>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- ========================================================
-         Pie de página
-         ======================================================== -->
-
-    <footer class="site-footer">
-        <div class="container footer-content">
-            <p>© 2026 GutsNet</p>
-            <p>Desarrollado con HTML, CSS y Linux.</p>
-        </div>
-    </footer>
+    <footer class="site-footer"><div class="container"><div class="footer-main"><div><a class="logo footer-logo" href="#inicio">GutsNet<span class="footer-dot">.</span></a><p>Hecho de circuitos, código y unas cuantas pruebas.</p></div><a class="text-link" href="https://github.com/Sudo-Guts" target="_blank" rel="noopener noreferrer">Nos vemos en GitHub <span aria-hidden="true">↗</span></a></div><div class="footer-bottom mono"><span>© 2026 GUSTAVO RUIZ LUIS</span><span>HTML + CSS + JS / SERVIDO DESDE LINUX</span><span class="visits-indicator">VISITAS <strong id="contador-visitas" aria-live="polite">Consultando…</strong></span><a href="#inicio">VOLVER ARRIBA ↑</a></div></div></footer>
 </body>
 </html>
-

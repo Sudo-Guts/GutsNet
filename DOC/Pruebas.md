@@ -24,6 +24,24 @@ sudo apache2ctl configtest
 Las comprobaciones deben terminar sin errores. `node` es opcional en el
 servidor de producción, pero útil para validar JavaScript.
 
+Sin iniciar Apache se puede revisar el portafolio:
+
+```bash
+python3 scripts/check-web.py
+python3 scripts/version-web-assets.py --check
+node scripts/test-web-ui.cjs
+```
+
+Estas comprobaciones verifican enlaces, fragmentos, recursos, IDs, versiones y
+referencias de accesibilidad. Las pruebas de JavaScript cubren la señal sintética,
+filtros, menú responsive, contador y reproductor con APIs DOM mínimas. No abren
+un navegador ni prueban la salida de audio, el video o el diseño renderizado.
+
+Después de editar CSS, JavaScript o las ilustraciones SVG, ejecuta
+`python3 scripts/version-web-assets.py`. El script añade a cada URL una versión
+calculada a partir del contenido del archivo. Así el navegador solicita el
+recurso nuevo cuando cambia su contenido. Las versiones se guardan en Git.
+
 ## 2. Publicación
 
 ```bash
@@ -54,6 +72,8 @@ Este objetivo ejecuta `scripts/test-web.sh` y verifica:
 | Inicio y materias | HTTP 200 y `text/html` |
 | Hoja de estilos | HTTP 200 y `text/css` |
 | JavaScript | HTTP 200 y tipo de contenido JavaScript |
+| HTML, CSS y JavaScript publicados | Coinciden con la copia local de la rama |
+| URL de CSS y JavaScript en el HTML | Incluyen la versión actual de cada recurso |
 | Dos pistas MP3 | HTTP 200 y `audio/mpeg` |
 | Video MP4 | HTTP 206 al solicitar un rango y `video/mp4` |
 | Contador GET | HTTP 405 |
@@ -101,6 +121,15 @@ por el video.
 5. Reproducir el video e intentar desplazarse por la línea de tiempo.
 6. Abrir los enlaces a materias y proyectos.
 7. Comprobar en la consola del navegador que no existan errores 404 ni errores de JavaScript.
+8. Cambiar frecuencia y amplitud en la portada; la gráfica debe corresponder a
+   una ventana de un segundo, sin superar la pantalla al ajustar la amplitud.
+9. Probar los cuatro filtros y volver a «Todo el taller»; deben reaparecer los
+   seis proyectos. Recorrer los botones con teclado y comprobar el foco visible.
+10. En móvil, abrir y cerrar el menú, seguir un enlace y cerrar con Escape.
+    Al pasar a escritorio la navegación debe permanecer visible.
+11. Desactivar JavaScript: proyectos, materias, video y enlaces siguen visibles;
+    los filtros se ocultan y los controles de la señal quedan deshabilitados.
+12. Reproducir música y luego el video: la música debe pausarse.
 
 El CV y la biblioteca privada GutsNet Cinema todavía están pendientes.
 Las pruebas de privacidad, autenticación y HTTPS se agregarán cuando estén

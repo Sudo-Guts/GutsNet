@@ -25,7 +25,7 @@ RSYNC_FLAGS := -rpt --delete --delete-excluded --no-links \
                --exclude=*.p12 \
                --exclude=*.pfx
 
-.PHONY: help check preview deploy test test-web
+.PHONY: help check preview deploy test test-web install-cinema check-cinema test-cinema install-ssh check-ssh test-ssh
 
 # ============================================================
 # Help
@@ -38,6 +38,12 @@ help:
 	@echo "  make deploy   - Publicar sitio web"
 	@echo "  make test     - Comprobar Apache"
 	@echo "  make test-web - Verificar HTML, CSS, JS, audio, video y contador"
+	@echo "  make install-cinema - Configurar GutsCinema (pide sudo y contrasena de cine)"
+	@echo "  make check-cinema   - Revisar HTTPS, Apache y acceso privado"
+	@echo "  make test-cinema    - Probar el catalogo y la reproduccion con tu cuenta"
+	@echo "  make install-ssh - Configurar la cuenta gutsjail y su area compartida"
+	@echo "  make check-ssh   - Revisar aislamiento SSH y permisos de escritura"
+	@echo "  make test-ssh    - Probar la consola en una jaula temporal"
 
 # ============================================================
 # Validation
@@ -45,6 +51,8 @@ help:
 
 check:
 	@command -v rsync >/dev/null || { echo "Falta rsync"; exit 1; }
+	@command -v python3 >/dev/null || { echo "Falta python3"; exit 1; }
+	@python3 "$(ROOT)/scripts/version-web-assets.py" --check
 	@test -d "$(SRC)" || { echo "No existe $(SRC)"; exit 1; }
 	@[ -f "$(SRC)/index.html" ] || [ -f "$(SRC)/index.php" ] || { \
 		echo "Falta index.html o index.php"; exit 1; \
@@ -81,3 +89,21 @@ test:
 
 test-web:
 	@bash "$(ROOT)/scripts/test-web.sh"
+
+install-cinema:
+	@sudo bash "$(ROOT)/SERVER/cinema/install.sh" --install
+
+check-cinema:
+	@sudo bash "$(ROOT)/SERVER/cinema/check.sh"
+
+test-cinema:
+	@bash "$(ROOT)/SERVER/cinema/test.sh"
+
+install-ssh:
+	@sudo bash "$(ROOT)/SERVER/ssh/install.sh" --install
+
+check-ssh:
+	@sudo bash "$(ROOT)/SERVER/ssh/check.sh"
+
+test-ssh:
+	@sudo $(MAKE) -C "$(ROOT)/SERVER/ssh" test-jail

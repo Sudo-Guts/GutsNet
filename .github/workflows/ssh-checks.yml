@@ -6,10 +6,12 @@ on:
     paths:
       - "SERVER/ssh/**"
       - ".github/workflows/ssh-checks.yml"
+      - "Makefile"
   pull_request:
     paths:
       - "SERVER/ssh/**"
       - ".github/workflows/ssh-checks.yml"
+      - "Makefile"
 
 permissions:
   contents: read
@@ -23,15 +25,97 @@ jobs:
         run: |
           bash -n SERVER/ssh/install.sh
           bash -n SERVER/ssh/check.sh
+          python3 -m py_compile SERVER/ssh/tests/test_shell.py
       - name: Compilar y probar shell estatica
         run: |
           make -C SERVER/ssh test
-      - name: Probar shell dentro de chroot
+      - name: Probar operaciones y aislamiento con UID sin privilegios
         run: |
-          sudo mkdir -p /tmp/gutsnet-ci-jail/usr/local/bin /tmp/gutsnet-ci-jail/compartido
-          sudo cp SERVER/ssh/out/gutsnet-shell /tmp/gutsnet-ci-jail/usr/local/bin/gutsnet-shell
-          printf 'Hola desde chroot\n' | sudo tee /tmp/gutsnet-ci-jail/compartido/prueba.txt >/dev/null
-          sudo chroot /tmp/gutsnet-ci-jail /usr/local/bin/gutsnet-shell -c "cat prueba.txt" | grep -Fq 'Hola desde chroot'
-          result="$(sudo chroot /tmp/gutsnet-ci-jail /usr/local/bin/gutsnet-shell -c 'cd /' 2>&1)"
-          echo "$result" | grep -Fq 'Comando no permitido'
-          echo "OK: shell dentro de chroot"
+          sudo make -C SERVER/ssh test-jail
+      - name: Instalar y comprobar OpenSSH
+        run: |
+          sudo apt-get -qq update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server sshpass acl
+          sudo systemctl start ssh
+          # Reproducir ACL heredadas con group::r-x y mascara rwx.
+          sudo install -d -o root -g root -m 755 /home/gutsnet-shared
+          sudo setfacl -m "d:u::rwx,d:u:$(id -u):rwx,d:g::r-x,d:m::rwx,d:o::r-x" /home/gutsnet-shared
+          sudo bash SERVER/ssh/install.sh --install
+          sudo bash SERVER/ssh/check.sh
+      - name: Probar sesiones SSH y SFTP reales por loopback
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          jail_password="$(openssl rand -hex 24)"
+          printf 'gutsjail:%s\n' "$jail_password" | sudo chpasswd
+          known_hosts="$RUNNER_TEMP/gutsnet-ssh-known-hosts"
+          ssh-keyscan -T 5 127.0.0.1 > "$known_hosts" 2>/dev/null
+          options=(-o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts"
+            -o PreferredAuthentications=password -o PubkeyAuthentication=no
+            -o NumberOfPasswordPrompts=1 -o ConnectTimeout=5 -o BatchMode=no)
+          remote() {
+            sshpass -d 3 ssh -T -n "${options[@]}" gutsjail@127.0.0.1 "$@" \
+              3< <(printf '%s\n' "$jail_password")
+          }
+          test "$(remote pwd)" = /compartido
+          remote 'mkdir documentos_ci'
+          remote 'write documentos_ci/nota.txt Documento creado por SSH'
+          test "$(remote 'cat documentos_ci/nota.txt')" = 'Documento creado por SSH'
+          remote 'touch documentos_ci/vacio.txt'
+          remote 'rm documentos_ci/vacio.txt'
+          remote 'rm documentos_ci/nota.txt'
+          remote 'rmdir documentos_ci'
+          remote 'mkdir borrar_ci'
+          remote 'mkdir borrar_ci/subcarpeta'
+          remote 'write borrar_ci/subcarpeta/nota.txt Prueba'
+          remote 'rm -r borrar_ci'
+          for command in 'cd ..' 'cd /' 'cat /etc/passwd' 'touch ../../fuera.txt' 'sudo id' '/bin/sh'; do
+            if remote "$command" > "$RUNNER_TEMP/gutsnet-ssh-denied.log" 2>&1; then
+              echo "ERROR: comando no permitido aceptado: $command"
+              exit 1
+            fi
+          done
+
+          printf 'Documento transferido por SFTP\n' > "$RUNNER_TEMP/gutsnet-upload.txt"
+          cat > "$RUNNER_TEMP/gutsnet-sftp.batch" <<EOF
+          mkdir /compartido/sftp_ci
+          put $RUNNER_TEMP/gutsnet-upload.txt /compartido/sftp_ci/nota.txt
+          get /compartido/sftp_ci/nota.txt $RUNNER_TEMP/gutsnet-download.txt
+          rm /compartido/sftp_ci/nota.txt
+          rmdir /compartido/sftp_ci
+          EOF
+          sftp_batch() {
+            sshpass -d 3 sftp -q "${options[@]}" -b "$1" gutsjail@127.0.0.1 \
+              3< <(printf '%s\n' "$jail_password")
+          }
+          sftp_batch "$RUNNER_TEMP/gutsnet-sftp.batch"
+          cmp "$RUNNER_TEMP/gutsnet-upload.txt" "$RUNNER_TEMP/gutsnet-download.txt"
+          printf 'get /etc/passwd %s/gutsnet-forbidden.txt\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/gutsnet-sftp-denied.batch"
+          if sftp_batch "$RUNNER_TEMP/gutsnet-sftp-denied.batch"; then
+            echo 'ERROR: SFTP accedio al passwd del host'
+            exit 1
+          fi
+          test ! -e "$RUNNER_TEMP/gutsnet-forbidden.txt"
+          printf 'put %s/gutsnet-upload.txt /fuera.txt\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/gutsnet-sftp-denied.batch"
+          if sftp_batch "$RUNNER_TEMP/gutsnet-sftp-denied.batch"; then
+            echo 'ERROR: SFTP escribio fuera del area compartida'
+            exit 1
+          fi
+
+          # Reinstalar conserva documentos y la clave de la cuenta.
+          remote 'write conservar_ci.txt Conservar al reinstalar'
+          auth_before="$(sudo getent shadow gutsjail | cut -d: -f2)"
+          sudo bash SERVER/ssh/install.sh --install
+          test "$auth_before" = "$(sudo getent shadow gutsjail | cut -d: -f2)"
+          test "$(remote 'cat conservar_ci.txt')" = 'Conservar al reinstalar'
+          remote 'rm conservar_ci.txt'
+          sudo bash SERVER/ssh/check.sh
+          unset jail_password auth_before
+          echo 'OK: altas, bajas y aislamiento por SSH/SFTP; reinstalacion conserva datos y cuenta.'
+      - name: Diagnosticar un fallo de SSH
+        if: failure()
+        run: |
+          sudo journalctl -u ssh -n 40 --no-pager || true
+          sudo namei -l /home/gutsnet-shared/ftp/intercambio /home/gutsnet-jail/compartido || true
+          sudo getfacl /home/gutsnet-shared/ftp/intercambio /home/gutsnet-jail/compartido || true
+          sudo /usr/sbin/sshd -T -C user=gutsjail,host=localhost,addr=127.0.0.1 || true

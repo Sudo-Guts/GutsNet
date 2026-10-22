@@ -47,129 +47,31 @@ make test
 make test-web
 ```
 
-## 2. GutsNet Cinema: contenido privado
+## 2. GutsCinema: biblioteca privada
 
-El catálogo está en `C0DE/web/public/cinema/index.php`, pero **no debe
-publicarse como biblioteca accesible por HTTP**. El PHP devuelve 403 sin
-HTTPS. Apache debe autenticar tanto el catálogo como **cada URL del video**.
-
-### 2.1. Directorio de películas
+Desde `~/GutsNet`, en la rama que contiene el instalador:
 
 ```bash
-sudo install -d -o root -g root -m 755 /home/gutsnet-shared
-sudo install -d -o root -g www-data -m 750 /home/gutsnet-shared/peliculas
+make install-cinema
+make test-cinema
 ```
 
-Si esas carpetas ya existen y son utilizadas por FTP, revisar primero
-la propiedad y los permisos: no aplicar cambios que interrumpan el
-almacenamiento compartido.
+El instalador prepara Apache, HTTPS, almacenamiento privado y la cuenta `cine`.
+Solicita la contraseña de forma interactiva y conserva la existente al repetirse.
+La biblioteca se abre en **https://gutsnet.test/cinema/**.
 
-Para añadir una película desde un archivo local del servidor:
+Para agregar un video del servidor:
 
 ```bash
-sudo install -o root -g www-data -m 640 \
-    /ruta/al/video.mp4 \
-    /home/gutsnet-shared/peliculas/video.mp4
+sudo bash SERVER/cinema/add.sh "/ruta/a/pelicula.mp4"
 ```
 
-Se admiten archivos `.mp4`, `.webm` y `.ogv`. Los archivos privados nunca
-deben copiarse a `C0DE/web/public` o `/var/www/gutsnet/public`.
+Consulta [SERVER/cinema/README.md](../SERVER/cinema/README.md) para resolver el
+nombre en otros equipos, configurar la confianza del certificado local, agregar
+cuentas y revisar las pruebas de autenticación y reproducción.
 
-### 2.2. Usuario y contraseña (fuera de Git)
-
-```bash
-sudo apt install apache2-utils
-sudo install -d -o root -g www-data -m 750 /etc/gutsnet
-sudo htpasswd -c -B /etc/gutsnet/cinema.htpasswd cine
-sudo chown root:www-data /etc/gutsnet/cinema.htpasswd
-sudo chmod 640 /etc/gutsnet/cinema.htpasswd
-```
-
-`htpasswd` solicitará la contraseña de forma interactiva. No registrar
-la contraseña en Git ni en comandos que la expongan en el historial.
-
-**La opción `-c` crea o reemplaza el archivo**: usarla solo para
-la primera cuenta. Para agregar cuentas adicionales, ejecutar
-`sudo htpasswd -B /etc/gutsnet/cinema.htpasswd otro_usuario`
-(sin `-c`).
-
-### 2.3. Certificado HTTPS para laboratorio
-
-En un entorno académico de red local se puede generar un certificado
-autofirmado. Ajustar la dirección IP si cambia:
-
-```bash
-sudo openssl req -x509 -newkey rsa:3072 -sha256 -nodes \
-    -days 365 \
-    -keyout /etc/ssl/private/gutsnet.key \
-    -out /etc/ssl/certs/gutsnet.crt \
-    -subj "/CN=gutsnet.test" \
-    -addext "subjectAltName=DNS:gutsnet.test,IP:192.168.244.135"
-
-sudo chmod 600 /etc/ssl/private/gutsnet.key
-sudo chmod 644 /etc/ssl/certs/gutsnet.crt
-```
-
-El certificado autofirmado no será confiable por defecto en los
-navegadores. Para un despliegue real o para evitar alertas, utilizar
-una autoridad de certificación confiable o una CA local instalada
-explícitamente en los equipos autorizados. No ignorar advertencias
-TLS ante un certificado desconocido.
-
-### 2.4. Activación de Apache SSL
-
-Instalar los dos VirtualHosts del repositorio y habilitar módulos:
-
-```bash
-sudo install -m 644 SERVER/apache/gutsnet.conf \
-    /etc/apache2/sites-available/gutsnet.conf
-
-sudo install -m 644 SERVER/apache/gutsnet-ssl.conf \
-    /etc/apache2/sites-available/gutsnet-ssl.conf
-
-sudo a2enmod ssl auth_basic alias
-sudo a2ensite gutsnet-ssl.conf
-
-sudo apache2ctl configtest
-sudo systemctl reload apache2
-make deploy
-```
-
-El VirtualHost del puerto 80 redirige `/cinema/` a HTTPS. El VirtualHost
-del puerto 443 protege `/cinema/` mediante autenticación Basic y
-sirve los archivos del Alias `/cinema/media/` con las mismas restricciones.
-
-Para que otro equipo acceda a HTTPS, debe poder llegar al puerto TCP 443.
-Si UFW está activo, revisar sus reglas antes de permitir ese puerto.
-
-### 2.5. Pruebas de autenticación
-
-Desde el servidor:
-
-```bash
-# Debe ser HTTP 302 con redirección a HTTPS.
-curl -I -H "Host: gutsnet.test" \
-    http://127.0.0.1/cinema/
-
-# Sin credenciales debe responder HTTP 401.
-# --cacert confía SOLO en el certificado de laboratorio indicado.
-curl -I --cacert /etc/ssl/certs/gutsnet.crt \
-    --resolve gutsnet.test:443:127.0.0.1 \
-    https://gutsnet.test/cinema/
-
-# Con credenciales correctas debe responder HTTP 200.
-# curl solicita la contraseña interactivamente.
-curl -I --cacert /etc/ssl/certs/gutsnet.crt \
-    --resolve gutsnet.test:443:127.0.0.1 \
-    -u cine \
-    https://gutsnet.test/cinema/
-```
-
-**Prueba de seguridad obligatoria:** una petición no autenticada a
-`https://gutsnet.test/cinema/media/video.mp4` también debe devolver
-HTTP 401. Con credenciales, el archivo debe reproducirse y permitir
-solicitudes HTTP Range. No almacenar películas públicas como si
-estuvieran protegidas por el catálogo.
+La activación ocurre al ejecutar el instalador en Ubuntu; `git pull` no cambia
+los servicios ni crea credenciales por sí solo.
 
 ## 3. Pendientes
 

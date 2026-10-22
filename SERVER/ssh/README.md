@@ -1,116 +1,157 @@
-# GutsNet - SSH Jail con consola restringida y SFTP
+# GutsNet: usuario SSH restringido
 
-Modulo preparado para Ubuntu Server. NO se activa automaticamente al
-actualizar Git. La instalacion se ejecutara cuando el servidor vuelva.
+La cuenta **gutsjail** administra documentos y carpetas dentro de
+**/compartido**, con una consola en C y un chroot de OpenSSH. Es independiente
+de la cuenta administradora **guts**.
 
-## Objetivo
+## Instalar o actualizar
 
-- Mantener el usuario administrador guts sin cambios.
-- Crear gutsjail, sin sudo, con autenticacion por contraseña.
-- Aplicar ChrootDirectory /home/gutsnet-jail.
-- Restringir comandos mediante una shell en C compilada estaticamente.
-- Comandos admitidos: help, pwd, ls, cat archivo, exit.
-- Habilitar SFTP mediante OpenSSH internal-sftp para subir y descargar.
-- Compartir la carpeta FTPS:
-  /home/gutsnet-shared/ftp/intercambio, montada en /compartido.
-- Dejar /home/gutsnet-shared/peliculas fuera de la jaula.
+Desde la rama que contiene estos cambios:
 
-FTP(S) y SFTP son protocolos diferentes. El primero usa vsftpd (TCP 21);
-SSH y SFTP usan OpenSSH (TCP 22).
+```bash
+cd ~/GutsNet
+git pull --ff-only
+make install-ssh
+sudo passwd gutsjail
+make check-ssh
+```
 
-## Estructura
+`passwd` establece la contraseña de la cuenta; si ya tiene una que quieres
+conservar, omite ese comando. La reinstalación conserva la contraseña existente
+y los documentos compartidos.
 
-La shell compilada se instala en /usr/local/bin/gutsnet-shell tanto en el host
-(para la validacion de OpenSSH) como dentro del chroot (para ejecutarse).
+El servidor necesita OpenSSH activo, GCC con soporte de enlace estático,
+binutils y util-linux. El instalador revisa los requisitos antes de modificar
+SSH. Prepara el grupo `gutsnet-files` y el área de intercambio si faltan; no es
+necesario configurar FTPS primero.
+Instala `acl` si falta y corrige la ACL de grupo y su herencia en el intercambio,
+conservando las entradas con nombre y los archivos existentes.
 
-    /home/gutsnet-jail/                 root:root; 755
-    |-- usr/local/bin/gutsnet-shell     root:root; 755; ELF estatico
-    |-- dev/                            nodos basicos de dispositivo
-    +-- compartido/                     bind mount del intercambio FTPS
+## Conectarse desde el mismo Ubuntu
 
-La shell no interpreta cadenas arbitrarias ni ejecuta bash, sudo, sh o cd.
-El comando cat admite nombres de archivo simples sin rutas ni symlinks,
-limitando la lectura a un maximo de 1 MiB. Para cargar archivos se usa SFTP.
+```bash
+ssh gutsjail@127.0.0.1
+```
 
-El limite del sistema de archivos proviene del chroot y de los permisos
-Linux; la lista blanca de comandos complementa ese aislamiento.
+Para conectarse desde la red, sustituye `127.0.0.1` por la IP actual del
+servidor. Dentro de la sesión puedes probar:
 
-## Instalar FTP primero
+```text
+pwd
+mkdir documentos
+cd documentos
+write nota.txt Este documento esta dentro del Jail.
+cat nota.txt
+touch vacio.txt
+ls
+rm vacio.txt
+rm nota.txt
+cd ..
+rmdir documentos
+exit
+```
 
-Este modulo requiere el grupo gutsnet-files y la ruta
-/home/gutsnet-shared/ftp/intercambio. Ejecutar primero el instalador de FTPS,
-revisar las comprobaciones y crear la contraseña de gutsftp.
+`exit` cierra la conexión SSH. En una sesión nueva siempre se empieza en
+`/compartido`.
 
-## Instalacion diferida
+## Comandos de la consola
 
-Cuando vuelva el servidor:
+| Comando | Función |
+| --- | --- |
+| `help` | Muestra los comandos disponibles. |
+| `pwd` | Muestra la ubicación dentro de /compartido. |
+| `ls [ruta]` | Lista archivos y carpetas. |
+| `cd [ruta]` | Entra en una subcarpeta; sin ruta vuelve a /compartido. |
+| `mkdir carpeta` | Crea una carpeta. |
+| `touch archivo.txt` | Crea un archivo vacío; conserva el contenido si ya existe. |
+| `write archivo.txt texto` | Crea un documento con texto y un salto de línea. Rechaza nombres existentes. |
+| `cat archivo.txt` | Lee un archivo regular de hasta 1 MiB. |
+| `rm archivo.txt` | Elimina un archivo o el enlace indicado, sin seguirlo. |
+| `rmdir carpeta` | Elimina una carpeta vacía. |
+| `rm -r carpeta` | Elimina una carpeta y su contenido, sin seguir enlaces. |
+| `exit` | Cierra la sesión. |
 
-    cd ~/GutsNet
-    git pull --ff-only origin main
+Se admiten rutas relativas y rutas que comiencen con `/compartido/`.
+Los componentes de los nombres usan letras sin acento, números, puntos,
+guiones y guiones bajos, sin espacios ni nombres ocultos. El texto de
+`write` sí admite espacios y acentos; se guarda literalmente.
+No interpreta redirecciones, variables ni otros comandos dentro del texto.
 
-    sudo bash SERVER/ssh/install.sh --check
+En la raíz compartida, `cd ..` se rechaza. Desde una subcarpeta, `cd ..`
+solo permite volver hacia /compartido. Se rechazan rutas que salgan del área,
+por ejemplo `cat /etc/passwd`, `cd /` o `touch ../../fuera.txt`.
+La consola no ejecuta `bash`, `sh`, `sudo`, programas subidos ni comandos
+arbitrarios. Los errores devuelven un estado distinto de cero también al usar
+`ssh gutsjail@servidor 'comando'`.
 
-Mantener ABIERTA una conexion administrativa SSH independiente antes
-de instalar y comprobar que funciona:
+## Área compartida y permisos
 
-    sudo bash SERVER/ssh/install.sh --install
-    sudo passwd gutsjail
-    sudo bash SERVER/ssh/check.sh
+| Ruta del servidor | Uso y permisos |
+| --- | --- |
+| `/home/gutsnet-jail` | Raíz del chroot, root:root, 755. |
+| `/home/gutsnet-jail/usr/local/bin/gutsnet-shell` | Consola estática propiedad de root. |
+| `/home/gutsnet-shared/ftp/intercambio` | Almacenamiento compartido, root:gutsnet-files, 2770. |
+| `/home/gutsnet-jail/compartido` | Montaje bind del mismo intercambio. |
 
-El instalador crea una copia de /etc/ssh/sshd_config antes de editarlo.
-Convierte el subsistema SFTP a internal-sftp para el chroot, agrega
-Match User gutsjail al final, valida sshd -t y sshd -T -C para gutsjail
-y guts y solo entonces recarga SSH. No reinicia SSH sin validar.
+La cuenta no tiene UID 0 ni pertenece a grupos administrativos. La raíz de la
+jaula y la consola permanecen protegidas. Las nuevas carpetas de la consola
+heredan el grupo compartido y los archivos se crean con permisos 660.
+Los cambios en /compartido también se reflejan en el intercambio FTPS, cuando
+ese servicio esté configurado.
 
-Registra un bind mount persistente en /etc/fstab, respaldando el archivo.
-El verificador comprueba que /compartido apunta realmente al mismo directorio
-que el intercambio FTPS comparando dispositivo e inodo (funciona aunque
-/home sea otra particion).
-No cambia Apache, la biblioteca Cinema ni la propiedad de intercambio.
+La biblioteca privada de Cinema permanece fuera del chroot. El aislamiento del
+servidor proviene de `ChrootDirectory` y los permisos de Linux; la consola
+añade el límite de navegación y operaciones a /compartido. Resuelve las rutas
+desde un descriptor de esa carpeta y abre cada directorio sin seguir enlaces.
 
-## Comprobar desde la computadora administradora
+## Subir y descargar archivos con SFTP
 
-La IP 192.168.244.135 puede haber cambiado; confirmarla antes.
+```bash
+sftp gutsjail@127.0.0.1
+```
 
-    ssh gutsjail@192.168.244.135
+```text
+put informe.pdf /compartido/informe.pdf
+get /compartido/informe.pdf informe-descargado.pdf
+mkdir /compartido/respaldo
+rm /compartido/informe.pdf
+rmdir /compartido/respaldo
+bye
+```
 
-Dentro de la consola:
+SFTP usa `internal-sftp` dentro del mismo chroot. La raíz que pueda mostrar
+el cliente corresponde a la jaula, no a la raíz del servidor; solo el área
+compartida tiene permisos de escritura para esta cuenta.
+SFTP y FTP(S) son servicios distintos.
 
-    help
-    pwd
-    ls
-    cat prueba.txt
-    exit
+## Comprobaciones
 
-Un comando remoto que no esta permitido debe ser rechazado:
+```bash
+make check-ssh
+make test-ssh
+```
 
-    ssh gutsjail@192.168.244.135 'uname -a'
+La primera revisión comprueba la cuenta, el montaje, la escritura en el área,
+la protección de la raíz y las opciones efectivas de OpenSSH.
+La segunda crea una jaula temporal y ejecuta 14 pruebas con un UID sin
+privilegios: altas, bajas, navegación, grupo compartido, enlaces, rutas de
+escape, comandos prohibidos y entradas largas. Solo utiliza sus propios
+archivos temporales.
 
-Para subir y bajar archivos, usar SFTP:
+GitHub Actions también instala el módulo y comprueba conexiones reales por
+SSH/SFTP en loopback, rechazos de escape y reinstalación con conservación de
+documentos y contraseña.
 
-    sftp gutsjail@192.168.244.135
-    sftp> pwd
-    sftp> put prueba.txt
-    sftp> get prueba.txt prueba-descargada.txt
-    sftp> bye
+El instalador respalda `/etc/ssh/sshd_config` y `/etc/fstab`, valida
+`sshd -t` y las opciones para `gutsjail` y `guts`, y recarga SSH después
+de validar. Restaura la configuración SSH si falla la validación o la recarga.
 
-Debera ver /compartido; los mismos ficheros deben aparecer en
-/intercambio al conectarse mediante FTPS. No debe poder navegar fuera
-del chroot, ver peliculas, ejecutar sudo ni reenviar puertos.
+Para diagnóstico:
 
-## Recuperacion
+```bash
+sudo journalctl -u ssh -n 50 --no-pager
+sudo /usr/sbin/sshd -t
+sudo /usr/sbin/sshd -T -C user=gutsjail,host=localhost,addr=127.0.0.1
+```
 
-Mantener abierta una terminal administrativa antes de probar.
-El instalador restaura el archivo SSH anterior si falla la validacion.
-Para diagnostico:
-
-    sudo journalctl -u ssh -n 70 --no-pager
-    sudo /usr/sbin/sshd -t
-    sudo /usr/sbin/sshd -T -C user=gutsjail,host=localhost,addr=127.0.0.1
-
-Las copias quedan en:
-
-    /etc/ssh/sshd_config.gutsnet-backup-*
-    /etc/fstab.gutsnet-backup-*
-
-No registrar contraseñas o llaves privadas en Git.
+Referencia: [ChrootDirectory de OpenSSH](https://man.openbsd.org/sshd_config#ChrootDirectory).

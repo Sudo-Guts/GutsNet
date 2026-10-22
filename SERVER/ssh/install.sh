@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GutsNet SSH Jail. Solo instalar cuando el servidor este disponible.
+# GutsNet SSH Jail con escritura limitada al area compartida.
 set -Eeuo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -19,10 +19,17 @@ preflight() {
     [[ -x /usr/sbin/sshd && -f "$SSHD" ]] || die "OpenSSH Server no instalado."
     command -v cc >/dev/null || die "Falta GCC."
     command -v readelf >/dev/null || die "Falta binutils."
-    [[ -d "$SHARED" && ! -L "$SHARED" ]] || die "Primero instala FTP y crea $SHARED."
-    getent group "$GROUP" >/dev/null || die "Falta grupo $GROUP (instala FTP primero)."
+    command -v setfacl >/dev/null || die "Falta acl. Instala con sudo apt-get install acl."
+    for p in /home/gutsnet-shared /home/gutsnet-shared/ftp "$SHARED"; do
+        [[ ! -L "$p" && ( ! -e "$p" || -d "$p" ) ]] || die "Ruta compartida insegura: $p"
+    done
+    if [[ -d "$SHARED" ]]; then
+        [[ "$(stat -c '%U:%G' "$SHARED")" == "root:$GROUP" ]] \
+            || die "La carpeta compartida debe pertenecer a root:$GROUP."
+    fi
     [[ "$(stat -c '%U:%G' /home)" == root:root ]] || die "/home no es root:root."
-    for p in "$JAIL" "$JAIL/compartido" "$JAIL/usr" "$JAIL/usr/local" "$JAIL/usr/local/bin"; do
+    for p in "$JAIL" "$JAIL/compartido" "$JAIL/usr" "$JAIL/usr/local" "$JAIL/usr/local/bin" \
+        "$JAIL/dev" "$JAIL$SHELL_PATH" "$SHELL_PATH"; do
         [[ ! -L "$p" ]] || die "Enlace simbolico prohibido: $p"
     done
     if [[ -e "$JAIL" ]]; then
@@ -31,9 +38,10 @@ preflight() {
         (( (8#$mode & 0022) == 0 )) || die "Raiz del jail es escribible por grupo/otros."
     fi
     if id "$USER_NAME" >/dev/null 2>&1; then
+        [[ "$(id -u "$USER_NAME")" != 0 ]] || die "La cuenta restringida no puede tener UID 0."
         [[ "$(getent passwd "$USER_NAME" | cut -d: -f6)" == /compartido ]] || die "Home de $USER_NAME inesperado."
         [[ "$(getent passwd "$USER_NAME" | cut -d: -f7)" == "$SHELL_PATH" ]] || die "Shell de $USER_NAME inesperada."
-        for dangerous in sudo docker lxd; do
+        for dangerous in root sudo admin wheel docker lxd disk shadow; do
             if id -nG "$USER_NAME" | tr ' ' '\n' | grep -qx "$dangerous"; then
                 die "Usuario $USER_NAME pertenece a grupo $dangerous."
             fi
@@ -50,6 +58,13 @@ preflight() {
 }
 
 install_jail() {
+    [[ "$EUID" == 0 ]] || die "Usa sudo."
+    if ! command -v setfacl >/dev/null; then
+        command -v apt-get >/dev/null || die "Falta acl (setfacl)."
+        log "Instalando acl para los permisos compartidos"
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y acl
+    fi
     preflight
     systemctl is-active --quiet ssh || die "ssh.service no esta activo: no modificar."
     binary="$(mktemp /tmp/gutsnet-shell.XXXXXX)"
@@ -60,6 +75,18 @@ install_jail() {
     if readelf -l "$binary" | grep -q INTERP; then
         die "El binario necesita librerias dinamicas."
     fi
+
+    # El area puede prepararse antes de instalar FTPS; ambos usan el mismo grupo.
+    getent group "$GROUP" >/dev/null || groupadd --system "$GROUP"
+    for p in /home/gutsnet-shared /home/gutsnet-shared/ftp; do
+        [[ -d "$p" ]] || install -d -o root -g root -m 755 "$p"
+    done
+    [[ -d "$SHARED" ]] || install -d -o root -g "$GROUP" -m 2770 "$SHARED"
+    # Con ACL extendidas, chmod modifica la mascara, no group::. Ajustar ambos
+    # evita un 2770 aparente cuyo grupo real solo conserva lectura/recorrido.
+    setfacl -m u::rwx,g::rwx,m::rwx,o::--- "$SHARED"
+    setfacl -m d:u::rwx,d:g::rwx,d:m::rwx,d:o::--- "$SHARED"
+    chmod 2770 "$SHARED"
 
     install -d -o root -g root -m 755 "$JAIL" "$JAIL/usr" \
         "$JAIL/usr/local" "$JAIL/usr/local/bin" "$JAIL/dev"
@@ -101,6 +128,13 @@ install_jail() {
             --shell "$SHELL_PATH" --user-group --groups "$GROUP" "$USER_NAME"
     else
         usermod -a -G "$GROUP" "$USER_NAME"
+    fi
+    if ! runuser -u "$USER_NAME" -- test -w "$JAIL/compartido" \
+        || ! runuser -u "$USER_NAME" -- test -x "$JAIL/compartido"; then
+        runuser -u "$USER_NAME" -- id >&2
+        stat -c '%A %U:%G %n' /home /home/gutsnet-shared /home/gutsnet-shared/ftp \
+            "$SHARED" "$JAIL" "$JAIL/compartido" >&2
+        die "La cuenta restringida no puede escribir/recorrer el area compartida."
     fi
 
     # Respaldar antes de tocar OpenSSH. Nunca reiniciar una sesion sin validar.
