@@ -16,7 +16,7 @@ header("Cache-Control: private, no-store");
 header("X-Content-Type-Options: nosniff");
 
 const CINEMA_STORAGE = "/home/gutsnet-shared/peliculas";
-const CINEMA_INCOMING = CINEMA_STORAGE . "/.incoming";
+const CINEMA_INCOMING = "/home/gutsnet-shared/.cinema-incoming";
 const CINEMA_MAX_BYTES = 2147483648; // 2 GiB; el cuerpo multipart tiene margen aparte.
 const CINEMA_TYPES = [
     "mp4" => "video/mp4",

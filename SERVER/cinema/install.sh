@@ -7,7 +7,7 @@ here="$(cd -- "$(dirname -- "$0")" && pwd)"
 repo="$(cd -- "$here/../.." && pwd)"
 shared=/home/gutsnet-shared
 storage="$shared/peliculas"
-incoming="$storage/.incoming"
+incoming="$shared/.cinema-incoming"
 auth_dir=/etc/gutsnet
 auth_file="$auth_dir/cinema.htpasswd"
 tls_dir="$auth_dir/tls"
@@ -17,7 +17,7 @@ ca_cert=/etc/ssl/certs/gutsnet-ca.crt
 ca_key="$tls_dir/ca.key"
 override_dir=/etc/systemd/system/apache2.service.d
 override_file="$override_dir/gutsnet-cinema.conf"
-account=cine
+account=gutsjail
 mode=""
 password_stdin=0
 skip_packages=0
@@ -27,7 +27,7 @@ fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 info() { printf '[GutsCinema] %s\n' "$*"; }
 usage() {
     cat <<'HELP'
-Uso: sudo bash SERVER/cinema/install.sh --install [--user cine]
+Uso: sudo bash SERVER/cinema/install.sh --install [--user gutsjail]
      sudo bash SERVER/cinema/install.sh --check
 
 --install          Configura Apache, HTTPS, cuenta privada y publica la web.
@@ -107,8 +107,21 @@ php -r 'exit(PHP_INT_SIZE >= 8 && extension_loaded("fileinfo") && extension_load
 install -d -o www-data -g www-data -m 700 "$incoming"
 # Repara instalaciones anteriores antes de exigir acceso a Apache.
 # Un bloqueo creado por root tambien impedia tanto las altas como las bajas.
-chown www-data:www-data "$storage" "$incoming"
-chmod 0770 "$storage"
+# Modo compartido: preservar la ACL de gutsjail. En instalaciones
+# antiguas, conservar permisos de Cinema hasta realizar la migracion.
+if [[ -f "$auth_dir/media-unificada" ]]; then
+    getent group gutsnet-files >/dev/null || fail 'Falta grupo gutsnet-files'
+    command -v setfacl >/dev/null || fail 'Instala el paquete acl'
+    usermod -aG gutsnet-files www-data
+    chown root:gutsnet-files "$storage"
+    chmod 2770 "$storage"
+    setfacl -m u:www-data:rwx,g:gutsnet-files:rwx,m::rwx,o::--- "$storage"
+    setfacl -m d:u:www-data:rwx,d:g:gutsnet-files:rwx,d:m::rwx,d:o::--- "$storage"
+else
+    chown www-data:www-data "$storage"
+    chmod 0770 "$storage"
+fi
+chown www-data:www-data "$incoming"
 chmod 0700 "$incoming"
 if [[ -e "$incoming/.lock" ]]; then
     chown www-data:www-data "$incoming/.lock"
@@ -220,11 +233,22 @@ make -C "$repo" deploy
 if [[ ! -e "$storage/Prueba_GutsCinema.mp4" && ! -L "$storage/Prueba_GutsCinema.mp4" ]]; then
     install -o root -g www-data -m 640 "$repo/C0DE/web/public/assets/video/demostracion.mp4" \
         "$storage/Prueba_GutsCinema.mp4"
+    if [[ -f "$auth_dir/media-unificada" ]]; then
+        chgrp gutsnet-files "$storage/Prueba_GutsCinema.mp4"
+        chmod 0660 "$storage/Prueba_GutsCinema.mp4"
+    fi
 fi
 # Aplica el estado final despues de publicar la web y copiar la muestra.
 # No se tocan permisos del padre compartido ni de archivos del area FTP.
-chown www-data:www-data "$storage"
-chmod 0770 "$storage"
+if [[ -f "$auth_dir/media-unificada" ]]; then
+    chown root:gutsnet-files "$storage"
+    chmod 2770 "$storage"
+    setfacl -m u:www-data:rwx,g:gutsnet-files:rwx,m::rwx,o::--- "$storage"
+    setfacl -m d:u:www-data:rwx,d:g:gutsnet-files:rwx,d:m::rwx,d:o::--- "$storage"
+else
+    chown www-data:www-data "$storage"
+    chmod 0770 "$storage"
+fi
 chown www-data:www-data "$incoming"
 chmod 0700 "$incoming"
 if ! runuser -u www-data -- test -w "$storage"; then

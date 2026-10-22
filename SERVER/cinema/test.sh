@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 ok() { printf 'OK: %s\n' "$*"; }
-account=cine
+account=gutsjail
 cinema_host=gutsnet.test
 password_stdin=0
 while (($#)); do
@@ -11,7 +11,7 @@ while (($#)); do
         --user) (($# >= 2)) || fail 'Falta usuario'; account="$2"; shift 2 ;;
         --host) (($# >= 2)) || fail 'Falta nombre o IPv4'; cinema_host="$2"; shift 2 ;;
         --password-stdin) password_stdin=1; shift ;;
-        *) fail 'Uso: bash SERVER/cinema/test.sh [--user cine] [--host nombre_o_ipv4] [--password-stdin]' ;;
+        *) fail 'Uso: bash SERVER/cinema/test.sh [--user gutsjail] [--host nombre_o_ipv4] [--password-stdin]' ;;
     esac
 done
 [[ "$account" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]{0,31}$ ]] || fail 'Nombre de cuenta no valido.'

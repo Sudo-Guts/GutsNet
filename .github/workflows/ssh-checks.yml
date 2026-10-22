@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "SERVER/ssh/**"
+      - "SERVER/shared/**"
       - ".github/workflows/ssh-checks.yml"
       - "Makefile"
   pull_request:
@@ -18,7 +19,7 @@ permissions:
 
 jobs:
   jail:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Revisar sintaxis del instalador
