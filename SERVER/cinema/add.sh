@@ -12,5 +12,10 @@ name="${2:-$(basename -- "$source_file")}"
 [[ "$name" != */* && "$name" != .* && -n "$name" ]] || fail 'Nombre de destino no valido.'
 case "${name,,}" in *.mp4|*.mp3|*.webm|*.ogv) ;; *) fail 'Formato permitido: MP4, MP3, WebM u OGV.' ;; esac
 [[ ! -e "$storage/$name" && ! -L "$storage/$name" ]] || fail 'Ese nombre ya existe; elige otro para conservar el archivo anterior.'
-install -o root -g www-data -m 640 -- "$source_file" "$storage/$name"
+if [[ -f /etc/gutsnet/media-unificada ]]; then
+    install -o root -g gutsnet-files -m 660 -- "$source_file" "$storage/$name"
+    setfacl -m u:www-data:rw-,g:gutsnet-files:rw-,m::rw- "$storage/$name"
+else
+    install -o root -g www-data -m 640 -- "$source_file" "$storage/$name"
+fi
 printf 'Importado: %s\nAbre https://gutsnet.test/cinema/\n' "$name"

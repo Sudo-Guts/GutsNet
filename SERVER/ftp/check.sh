@@ -6,6 +6,12 @@ ok() { printf 'OK: %s\n' "$*"; }
 ftp_root="/home/gutsnet-shared/ftp"
 exchange="$ftp_root/intercambio"
 user="gutsftp"
+media=/home/gutsnet-shared/peliculas
+unified=0
+if [[ -f /etc/gutsnet/media-unificada ]]; then
+    user=gutsjail
+    unified=1
+fi
 group="gutsnet-files"
 [[ -f /etc/vsftpd.conf ]] || fail "Falta /etc/vsftpd.conf"
 [[ -f /etc/vsftpd.gutsnet-users ]] || fail "Falta lista de autorizados"
@@ -21,6 +27,12 @@ mode="$(stat -c '%a' "$ftp_root")"
 [[ -s /etc/ssl/certs/gutsnet.crt && -s /etc/ssl/private/gutsnet.key ]] || fail "Faltan certificados"
 systemctl is-active --quiet vsftpd || fail "Servicio vsftpd inactivo"
 ok "Servicio vsftpd activo"
-ok "FTPS con chroot separado de Cinema y carpeta de intercambio"
+if ((unified)); then
+    mountpoint -q "$exchange" || fail "FTPS no tiene montaje de biblioteca"
+    [[ "$(stat -Lc '%d:%i' "$exchange")" == "$(stat -Lc '%d:%i' "$media")" ]] || fail "FTPS no apunta a Cinema"
+    ok "FTPS comparte la biblioteca de Cinema y SSH Jail"
+else
+    ok "FTPS con intercambio separado (pendiente de unificacion)"
+fi
 ss -ltn '( sport = :21 )'
 printf '\nPendiente: probar la subida y descarga con un cliente FTPS remoto.\n'

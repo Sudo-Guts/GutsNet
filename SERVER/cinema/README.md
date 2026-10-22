@@ -13,7 +13,7 @@ make test-cinema
 ```
 
 El primer comando pide la contraseña de `sudo` y después solicita crear la
-contraseña de la cuenta **cine**. Es una cuenta de la biblioteca; no crea un
+contraseña de la cuenta **gutsjail**. Es una cuenta de la biblioteca; no crea un
 usuario de Linux. El segundo comando pide esa contraseña y comprueba el
 catálogo, lectura parcial y carga/eliminación de archivos propios de prueba.
 
@@ -22,7 +22,7 @@ El instalador:
 - Instala los paquetes de Apache, PHP y las herramientas necesarias.
 - Crea `/home/gutsnet-shared/peliculas` si todavía no existe y permite a Apache
   escribir solo en esta biblioteca. El padre compartido y el área FTP conservan
-  sus permisos. `.incoming/` queda privada para recibir archivos antes de publicarlos.
+  sus permisos. El directorio de carga temporal está fuera de la biblioteca, en `/home/gutsnet-shared/.cinema-incoming`, accesible solo por Apache.
 - Configura PHP para recibir un archivo de hasta **2 GiB** (2048 MiB), con margen
   para el formulario multipart y hasta una hora para recibirlo.
 - En equipos con systemd, instala una excepción `ReadWritePaths` únicamente para
@@ -185,7 +185,7 @@ sudo htpasswd -B /etc/gutsnet/cinema.htpasswd otro_usuario
 ```
 
 No uses `-c`: reemplazaría el archivo de cuentas. Si eliges una cuenta distinta
-de `cine`, prueba con:
+de `gutsjail`, prueba con:
 
 ```bash
 bash SERVER/cinema/test.sh --user otro_usuario
@@ -258,3 +258,18 @@ Referencias: [autenticación de Apache](https://httpd.apache.org/docs/2.4/howto/
 [secciones de configuración](https://httpd.apache.org/docs/2.4/sections.html),
 [carga de archivos en PHP](https://www.php.net/manual/en/features.file-upload.post-method.php)
 y [move_uploaded_file](https://www.php.net/manual/en/function.move-uploaded-file.php).
+
+## Biblioteca unificada con SSH/SFTP y FTPS
+
+La cuenta de persona autorizada es `gutsjail` en Cinema, SSH/SFTP y FTPS.
+Cinema protege las rutas web con HTTPS y Apache Basic Auth, con contraseña almacenada
+como hash en `/etc/gutsnet/cinema.htpasswd`. SSH/SFTP y FTPS validan la cuenta de Linux:
+**el nombre es el mismo, pero las contraseñas web y Linux pueden diferir**.
+Los procesos `www-data` y `root` siguen siendo cuentas de servicio.
+
+La carpeta `/home/gutsnet-shared/peliculas` es el almacenamiento canónico. Los montajes
+bind la presentan también como `/compartido` dentro del chroot de SSH y como
+`/intercambio` por FTPS. Nunca se publica la carpeta privada de cargas temporales.
+
+Instalar el cambio en una ventana de mantenimiento mediante la guía de
+[unificación](../shared/README.md). El simple `git pull` no migra archivos.

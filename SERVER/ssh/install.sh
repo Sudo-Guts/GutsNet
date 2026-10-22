@@ -4,7 +4,7 @@ set -Eeuo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 JAIL=/home/gutsnet-jail
-SHARED=/home/gutsnet-shared/ftp/intercambio
+SHARED=/home/gutsnet-shared/peliculas
 GROUP=gutsnet-files
 USER_NAME=gutsjail
 SHELL_PATH=/usr/local/bin/gutsnet-shell
@@ -20,7 +20,7 @@ preflight() {
     command -v cc >/dev/null || die "Falta GCC."
     command -v readelf >/dev/null || die "Falta binutils."
     command -v setfacl >/dev/null || die "Falta acl. Instala con sudo apt-get install acl."
-    for p in /home/gutsnet-shared /home/gutsnet-shared/ftp "$SHARED"; do
+    for p in /home/gutsnet-shared "$SHARED"; do
         [[ ! -L "$p" && ( ! -e "$p" || -d "$p" ) ]] || die "Ruta compartida insegura: $p"
     done
     if [[ -d "$SHARED" ]]; then

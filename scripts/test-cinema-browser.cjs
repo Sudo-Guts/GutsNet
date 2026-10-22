@@ -16,7 +16,7 @@ async function main() {
     // Solo este navegador de CI acepta la CA efimera. test.sh valida TLS con --cacert.
     const context = await browser.newContext({
         ignoreHTTPSErrors: true,
-        httpCredentials: { username: process.env.CINEMA_BROWSER_USER || "cine", password }
+        httpCredentials: { username: process.env.CINEMA_BROWSER_USER || "gutsjail", password }
     });
     const page = await context.newPage();
     page.setDefaultTimeout(15000);

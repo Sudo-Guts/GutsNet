@@ -9,6 +9,8 @@ root="/home/gutsnet-shared"
 ftp_root="$root/ftp"
 exchange="$ftp_root/intercambio"
 ftp_user="gutsftp"
+# Una vez unificada la biblioteca, FTPS usa la misma cuenta SSH.
+[[ ! -f /etc/gutsnet/media-unificada ]] || ftp_user="gutsjail"
 share_group="gutsnet-files"
 ftp_conf="/etc/vsftpd.conf"
 allowlist="/etc/vsftpd.gutsnet-users"
@@ -64,8 +66,13 @@ preflight() {
         local home shell
         home="$(getent passwd "$ftp_user" | cut -d: -f6)"
         shell="$(getent passwd "$ftp_user" | cut -d: -f7)"
-        [[ "$home" == "$ftp_root" && "$shell" == /usr/sbin/nologin ]] ||
-            die "El usuario $ftp_user existe con home/shell incompatibles"
+        if [[ "$ftp_user" == gutsjail ]]; then
+            [[ "$home" == /compartido && "$shell" == /usr/local/bin/gutsnet-shell ]] ||
+                die 'El usuario gutsjail no tiene su home/shell SSH esperados'
+        else
+            [[ "$home" == "$ftp_root" && "$shell" == /usr/sbin/nologin ]] ||
+                die "El usuario $ftp_user existe con home/shell incompatibles"
+        fi
         if id -nG "$ftp_user" | tr ' ' '\n' | grep -qx sudo; then
             die "$ftp_user pertenece a sudo"
         fi
@@ -113,6 +120,9 @@ do_install() {
         groupadd --system "$share_group"
     fi
 
+    if [[ "$ftp_user" == gutsjail ]] && ! id gutsjail >/dev/null 2>&1; then
+        die "Instala SSH Jail antes de usar gutsjail por FTPS"
+    fi
     if ! id "$ftp_user" >/dev/null 2>&1; then
         useradd --no-create-home --home-dir "$ftp_root" \
             --shell /usr/sbin/nologin --user-group \
@@ -149,8 +159,8 @@ do_install() {
     systemctl is-active --quiet vsftpd ||
         die "vsftpd no quedo activo. Ejecuta: journalctl -u vsftpd -n 50"
 
-    info "Instalacion FTPS completada. Peliculas, Apache y SSH intactos."
-    info "SIGUIENTE: sudo passwd $ftp_user (crea su contrasena sin mostrarla)"
+    info "Instalacion FTPS completada. Usuario autorizado: $ftp_user"
+    [[ "$ftp_user" != gutsftp ]] || info "SIGUIENTE: sudo passwd gutsftp (solo antes de unificar)"
     info "DESPUES: sudo bash SERVER/ftp/check.sh"
 }
 

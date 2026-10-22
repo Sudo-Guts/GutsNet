@@ -13,12 +13,12 @@ instalacion manual posterior en Ubuntu Server.
 | /home/gutsnet-shared/ftp | root:root / 755 | Raiz del chroot FTP, sin escritura |
 | /home/gutsnet-shared/ftp/intercambio | root:gutsnet-files / 2770 | Subida y descarga |
 
-- Usuario FTP: gutsftp, sin sudo, shell /usr/sbin/nologin.
+- Usuario FTPS antes de la migración: gutsftp; después: gutsjail, la misma cuenta restringida de SSH.
 - Autenticacion PAM dedicada: /etc/pam.d/gutsnet-vsftpd; no se modifica
   la politica PAM global ni /etc/shells.
 - Acceso de usuarios por lista blanca; no hay FTP anonimo.
 - Grupo gutsnet-files reservado para compartir archivos con el futuro
-  usuario SSH restringido; NO tiene acceso a peliculas.
+  usuario SSH restringido. Tras unificar, intercambia exactamente la misma biblioteca de Cinema.
 - Conexiones FTPS explicitamente cifradas con TLS 1.2/1.3, incluyendo datos.
 - Puerto TCP 21 y modo pasivo TCP 40000 a 40010.
 - Reutiliza el certificado HTTPS ya existente en
@@ -69,7 +69,7 @@ Usar FileZilla u otro cliente FTPS desde la computadora administradora:
 - Servidor: gutsnet.test, resuelto a la IP LAN del servidor.
 - Protocolo: FTP; tipo de cifrado: FTP explicito sobre TLS.
 - Puerto: 21; transferencia: pasiva.
-- Usuario: gutsftp; contraseña: la establecida con passwd.
+- Usuario: gutsftp antes de unificar o gutsjail después; contraseña de la cuenta Linux.
 - Carpeta remota: /intercambio.
 
 El certificado es autofirmado; verificarlo y confiar en el certificado
@@ -77,7 +77,7 @@ de laboratorio de manera controlada. No desactivar la verificacion TLS.
 
 Se deben demostrar cuatro operaciones: iniciar sesion, listar archivos,
 subir un fichero y descargarlo verificando que conserva su contenido.
-Comprobar tambien que no se puede escapar del chroot hacia peliculas.
+Comprobar que no se puede escapar del chroot; tras unificar, /intercambio muestra Cinema.
 
 ## Evidencias para la entrega
 
@@ -106,3 +106,17 @@ sin divulgar las contraseñas.
 - Restauracion: copiar expresamente el respaldo de
   /etc/vsftpd.conf.gutsnet-backup-... a /etc/vsftpd.conf y
   reiniciar vsftpd, previa comprobacion de los cambios.
+
+## Modo de biblioteca unificada
+
+Después de ejecutar la migración documentada en [Biblioteca unificada](../shared/README.md),
+FTPS autoriza únicamente a `gutsjail`, y `/intercambio` es un bind mount de
+`/home/gutsnet-shared/peliculas`. El chroot de FTPS permanece en
+`/home/gutsnet-shared/ftp`, propiedad root:root y no escribible por el usuario.
+No se necesita una cuenta FTP separada. Conserva `gutsftp` deshabilitada hasta
+comprobar todas las operaciones y revisar sus archivos anteriores.
+
+El instalador reconoce el marcador privado `/etc/gutsnet/media-unificada`:
+cuando existe, no vuelve a autorizar a `gutsftp`. No ejecutes `--install`
+antes de migrar la biblioteca. Probar subida y descarga de MP3/MP4 con
+`gutsjail` es parte de la validación funcional.

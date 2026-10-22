@@ -90,8 +90,8 @@ arbitrarios. Los errores devuelven un estado distinto de cero también al usar
 | --- | --- |
 | `/home/gutsnet-jail` | Raíz del chroot, root:root, 755. |
 | `/home/gutsnet-jail/usr/local/bin/gutsnet-shell` | Consola estática propiedad de root. |
-| `/home/gutsnet-shared/ftp/intercambio` | Almacenamiento compartido, root:gutsnet-files, 2770. |
-| `/home/gutsnet-jail/compartido` | Montaje bind del mismo intercambio. |
+| `/home/gutsnet-shared/peliculas` | Almacenamiento canónico de Cinema/SSH/FTPS después de la migración, root:gutsnet-files, 2770. |
+| `/home/gutsnet-jail/compartido` | Montaje bind de la biblioteca de Cinema. |
 
 La cuenta no tiene UID 0 ni pertenece a grupos administrativos. La raíz de la
 jaula y la consola permanecen protegidas. Las nuevas carpetas de la consola
@@ -99,7 +99,8 @@ heredan el grupo compartido y los archivos se crean con permisos 660.
 Los cambios en /compartido también se reflejan en el intercambio FTPS, cuando
 ese servicio esté configurado.
 
-La biblioteca privada de Cinema permanece fuera del chroot. El aislamiento del
+Los archivos de Cinema son parte del directorio compartido después de aplicar
+la migración; su staging temporal queda fuera del chroot. El aislamiento del
 servidor proviene de `ChrootDirectory` y los permisos de Linux; la consola
 añade el límite de navegación y operaciones a /compartido. Resuelve las rutas
 desde un descriptor de esa carpeta y abre cada directorio sin seguir enlaces.
@@ -155,3 +156,13 @@ sudo /usr/sbin/sshd -T -C user=gutsjail,host=localhost,addr=127.0.0.1
 ```
 
 Referencia: [ChrootDirectory de OpenSSH](https://man.openbsd.org/sshd_config#ChrootDirectory).
+
+## Biblioteca única
+
+`/compartido` utiliza un bind mount de `/home/gutsnet-shared/peliculas`.
+La misma cuenta `gutsjail` puede administrar archivos de Cinema desde la
+consola limitada o con SFTP, y usar FTPS mediante la contraseña de Linux.
+El acceso web usa una contraseña Apache independiente. La migración exige
+que se hayan terminado las sesiones activas y conserva los archivos originales
+[según la guía](../shared/README.md). No reinstales SSH antes de migrar el
+montaje antiguo, porque ahora el instalador comprueba la fuente canónica.

@@ -1,0 +1,63 @@
+name: Biblioteca compartida - comprobaciones estaticas
+
+on:
+  pull_request:
+    paths:
+      - 'SERVER/shared/**'
+      - 'SERVER/cinema/**'
+      - 'SERVER/ssh/**'
+      - 'SERVER/ftp/**'
+      - 'C0DE/web/public/cinema/**'
+      - '.github/workflows/shared-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'SERVER/shared/**'
+      - 'SERVER/cinema/**'
+      - 'SERVER/ssh/**'
+      - 'SERVER/ftp/**'
+      - 'C0DE/web/public/cinema/**'
+      - '.github/workflows/shared-checks.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  shared:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sintaxis del flujo de migracion y servicios
+        run: |
+          bash -n SERVER/shared/unify.sh
+          bash -n SERVER/shared/check.sh
+          bash -n SERVER/cinema/install.sh
+          bash -n SERVER/cinema/check.sh
+          bash -n SERVER/ssh/install.sh
+          bash -n SERVER/ftp/install.sh
+          php -l C0DE/web/public/cinema/common.php
+          php -l C0DE/web/public/cinema/manage.php
+      - name: Invariantes de biblioteca y acceso
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path("SERVER")
+          migrate=(root/"shared/unify.sh").read_text()
+          common=Path("C0DE/web/public/cinema/common.php").read_text()
+          manage=Path("C0DE/web/public/cinema/manage.php").read_text()
+          ssh=(root/"ssh/install.sh").read_text()
+          ftp=(root/"ftp/install.sh").read_text()
+          apache=(root/"apache/gutsnet-ssl.conf").read_text()
+          override=(root/"cinema/apache2-systemd.conf").read_text()
+          assert 'media=/home/gutsnet-shared/peliculas' in migrate
+          assert '"$media" "$old"' in migrate and '"$media" "$jail"' in migrate
+          assert 'rsync -a -- "$old/" "$media/"' in migrate
+          assert 'CINEMA_INCOMING = "/home/gutsnet-shared/.cinema-incoming"' in common
+          assert 'chgrp($staged, "gutsnet-files")' in manage
+          assert 'SHARED=/home/gutsnet-shared/peliculas' in ssh
+          assert 'media-unificada' in ftp and 'ftp_user="gutsjail"' in ftp
+          assert apache.count('Require user gutsjail') >= 2
+          assert 'ReadWritePaths=/home/gutsnet-shared' in override
+          assert '.cinema-incoming' in migrate and 'setfacl' in migrate
+          print('OK: rutas, autenticacion y staging unificados en codigo')
+          PY
