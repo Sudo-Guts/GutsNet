@@ -15,6 +15,10 @@ for path in "$ftp" "$ssh"; do
 done
 [[ -d "$stage" && ! -L "$stage" && "$(stat -c '%U:%G' "$stage")" == www-data:www-data ]] ||
     { echo 'Staging no es privado'; exit 1; }
+[[ "$(stat -c '%a' "$stage")" == 700 ]] || { echo 'Staging requiere permisos 700'; exit 1; }
+if runuser -u gutsjail -- test -x "$stage"; then
+    echo 'Staging accesible para gutsjail'; exit 1
+fi
 [[ ! -e "$media/.incoming" ]] || { echo 'Staging antiguo en la biblioteca'; exit 1; }
 for user in gutsjail www-data; do
     id -nG "$user" | tr ' ' '\n' | grep -qx gutsnet-files ||
@@ -23,6 +27,7 @@ done
 runuser -u gutsjail -- test -w "$ssh" || { echo 'Jail sin escritura'; exit 1; }
 runuser -u www-data -- test -w "$media" || { echo 'Apache sin escritura'; exit 1; }
 grep -qx gutsjail /etc/vsftpd.gutsnet-users || { echo 'FTPS sin gutsjail'; exit 1; }
+[[ "$(sed '/^[[:space:]]*$/d' /etc/vsftpd.gutsnet-users)" == gutsjail ]] || { echo 'FTPS permite otras cuentas'; exit 1; }
 echo 'OK: Cinema, SFTP y FTPS son una biblioteca real'
 echo 'OK: staging privado y ACL de escritura para gutsjail/www-data'
 echo 'Pendiente: pruebas funcionales autenticadas desde navegador y clientes'

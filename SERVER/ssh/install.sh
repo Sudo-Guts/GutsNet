@@ -4,7 +4,8 @@ set -Eeuo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 JAIL=/home/gutsnet-jail
-SHARED=/home/gutsnet-shared/peliculas
+SHARED=/home/gutsnet-shared/ftp/intercambio
+[[ ! -f /etc/gutsnet/media-unificada ]] || SHARED=/home/gutsnet-shared/peliculas
 GROUP=gutsnet-files
 USER_NAME=gutsjail
 SHELL_PATH=/usr/local/bin/gutsnet-shell

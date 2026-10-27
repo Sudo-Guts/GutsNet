@@ -1,4 +1,4 @@
-# Pruebas de la web de GutsNet
+# Pruebas y evidencias de GutsNet
 
 Estas pruebas se realizan contra Apache **ya desplegado**. La existencia de
 los archivos en GitHub no demuestra que el servidor los esté entregando.
@@ -131,6 +131,74 @@ por el video.
     los filtros se ocultan y los controles de la señal quedan deshabilitados.
 12. Reproducir música y luego el video: la música debe pausarse.
 
-El CV y la biblioteca privada GutsNet Cinema todavía están pendientes.
-Las pruebas de privacidad, autenticación y HTTPS se agregarán cuando estén
-implementadas.
+El CV definitivo sigue pendiente. Cinema ya cuenta con instalación y pruebas
+automatizadas: consulta [el manual de Cinema](../SERVER/cinema/README.md).
+Sus modificaciones más recientes necesitan desplegarse y verificarse en Ubuntu.
+
+## 6. Servicios no web
+
+Desde la raíz del repositorio, en **el servidor**:
+
+```bash
+make status
+make check-cinema
+make check-ftp
+make check-ssh
+make check-sockets
+make test-sockets
+```
+
+Estas verificaciones son independientes. Si un comando falla, revisa el manual
+de su módulo antes de reinstalarlo. Las pruebas de instalación y acceso real
+requieren credenciales y una instancia Ubuntu configurada; GitHub Actions no
+sustituye ese ambiente.
+
+## 7. Prueba desde otra computadora
+
+En el **servidor**:
+
+```bash
+ip -br -4 addr
+```
+
+En la **computadora administradora**, verifica que el tráfico irá por la LAN:
+
+```bash
+hostname
+ip route get 192.168.244.135
+```
+
+La IP anterior fue la del servidor durante las pruebas del 20 de octubre; si
+cambió, sustitúyela por la actual. Si la salida incluye
+`local ... dev lo`, estás probando desde el propio servidor,
+**no** desde una segunda computadora.
+
+Con un repositorio compilado en la computadora administradora:
+
+```bash
+make -C C0DE/sockets
+C0DE/sockets/out/echo_tcp_client 192.168.244.135 7 "Echo TCP LAN"
+C0DE/sockets/out/echo_udp_client 192.168.244.135 7 "Echo UDP LAN"
+C0DE/sockets/out/daytime_tcp_client 192.168.244.135 13
+C0DE/sockets/out/daytime_udp_client 192.168.244.135 13
+```
+
+Comprobar también por LAN la web, HTTPS/Cinema, FTPS y SSH/SFTP según la
+guía de cada servicio. No publiques contraseñas en capturas o terminales.
+
+## 8. Capturas de Wireshark
+
+Inicia Wireshark **en la interfaz LAN del equipo cliente**, antes de ejecutar
+los programas anteriores, y utiliza este filtro de visualización:
+
+```text
+ip.addr == 192.168.244.135 && (tcp.port == 7 || udp.port == 7 || tcp.port == 13 || udp.port == 13)
+```
+
+En TCP identifica el intercambio SYN/SYN-ACK/ACK y la carga útil.
+En UDP comprueba datagramas de ida y vuelta, sin establecimiento de sesión.
+Guarda el archivo `.pcapng` y capturas de pantalla sin exponer cuentas
+ni información privada.
+
+**No dar por concluida la evidencia LAN hasta comprobar que
+la computadora cliente y el servidor son equipos distintos.**

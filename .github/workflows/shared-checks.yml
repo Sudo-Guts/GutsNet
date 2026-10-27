@@ -1,4 +1,4 @@
-name: Biblioteca compartida - comprobaciones estaticas
+name: Biblioteca compartida - migracion e interfaces reales
 
 on:
   pull_request:
@@ -7,7 +7,9 @@ on:
       - 'SERVER/cinema/**'
       - 'SERVER/ssh/**'
       - 'SERVER/ftp/**'
-      - 'C0DE/web/public/cinema/**'
+      - 'SERVER/apache/**'
+      - 'C0DE/web/public/**'
+      - 'Makefile'
       - '.github/workflows/shared-checks.yml'
   push:
     branches: [main]
@@ -16,7 +18,9 @@ on:
       - 'SERVER/cinema/**'
       - 'SERVER/ssh/**'
       - 'SERVER/ftp/**'
-      - 'C0DE/web/public/cinema/**'
+      - 'SERVER/apache/**'
+      - 'C0DE/web/public/**'
+      - 'Makefile'
       - '.github/workflows/shared-checks.yml'
 
 permissions:
@@ -25,39 +29,99 @@ permissions:
 jobs:
   shared:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Sintaxis del flujo de migracion y servicios
+      - name: Sintaxis y consola restringida
         run: |
-          bash -n SERVER/shared/unify.sh
-          bash -n SERVER/shared/check.sh
-          bash -n SERVER/cinema/install.sh
-          bash -n SERVER/cinema/check.sh
-          bash -n SERVER/ssh/install.sh
-          bash -n SERVER/ftp/install.sh
+          for script in SERVER/shared/*.sh; do bash -n "$script"; done
           php -l C0DE/web/public/cinema/common.php
           php -l C0DE/web/public/cinema/manage.php
-      - name: Invariantes de biblioteca y acceso
+          python3 -m py_compile SERVER/shared/tests/test_interfaces.py
+          make -C SERVER/ssh test
+      - name: Instalar requisitos del servidor temporal
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          root=Path("SERVER")
-          migrate=(root/"shared/unify.sh").read_text()
-          common=Path("C0DE/web/public/cinema/common.php").read_text()
-          manage=Path("C0DE/web/public/cinema/manage.php").read_text()
-          ssh=(root/"ssh/install.sh").read_text()
-          ftp=(root/"ftp/install.sh").read_text()
-          apache=(root/"apache/gutsnet-ssl.conf").read_text()
-          override=(root/"cinema/apache2-systemd.conf").read_text()
-          assert 'media=/home/gutsnet-shared/peliculas' in migrate
-          assert '"$media" "$old"' in migrate and '"$media" "$jail"' in migrate
-          assert 'rsync -a -- "$old/" "$media/"' in migrate
-          assert 'CINEMA_INCOMING = "/home/gutsnet-shared/.cinema-incoming"' in common
-          assert 'chgrp($staged, "gutsnet-files")' in manage
-          assert 'SHARED=/home/gutsnet-shared/peliculas' in ssh
-          assert 'media-unificada' in ftp and 'ftp_user="gutsjail"' in ftp
-          assert apache.count('Require user gutsjail') >= 2
-          assert 'ReadWritePaths=/home/gutsnet-shared' in override
-          assert '.cinema-incoming' in migrate and 'setfacl' in migrate
-          print('OK: rutas, autenticacion y staging unificados en codigo')
-          PY
+          sudo apt-get -qq update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apache2 apache2-utils php libapache2-mod-php php-sqlite3 openssl rsync curl python3 make util-linux acl openssh-server sshpass vsftpd
+          sudo systemctl start ssh
+          sudo install -d /etc/systemd/system/apache2.service.d
+          printf '[Service]\nProtectHome=read-only\nMemoryDenyWriteExecute=yes\n' | sudo tee /etc/systemd/system/apache2.service.d/gutsnet-shared-test.conf >/dev/null
+          sudo systemctl daemon-reload
+      - name: Migrar datos existentes y verificar las tres interfaces
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          web_password="$(openssl rand -hex 24)"
+          linux_password="$(openssl rand -hex 24)"
+          echo "::add-mask::$web_password"
+          echo "::add-mask::$linux_password"
+          printf '%s\n' "$web_password" | sudo bash SERVER/cinema/install.sh --install --skip-packages --password-stdin
+          sudo bash SERVER/ftp/install.sh --install
+          sudo bash SERVER/ssh/install.sh --install
+          printf 'gutsjail:%s\ngutsftp:%s\n' "$linux_password" "$linux_password" | sudo chpasswd
+          printf '%s\n' "$web_password" | sudo htpasswd -B -i /etc/gutsnet/cinema.htpasswd cine
+          media=/home/gutsnet-shared/peliculas
+          exchange=/home/gutsnet-shared/ftp/intercambio
+          stage=/home/gutsnet-shared/.cinema-incoming
+
+          # Representar la biblioteca y el staging de la instalacion anterior.
+          sudo mv "$stage" "$media/.incoming"
+          sudo install -m 640 -o root -g www-data C0DE/web/public/assets/audio/ambiente2.mp3 "$media/Anterior Cinema.mp3"
+          sudo install -m 660 -o root -g gutsnet-files C0DE/web/public/assets/audio/ambiente2.mp3 "$exchange/Anterior FTP.mp3"
+          before_media="$(sudo sha256sum "$media/Anterior Cinema.mp3" | cut -d ' ' -f1)"
+          before_ftp="$(sudo sha256sum "$exchange/Anterior FTP.mp3" | cut -d ' ' -f1)"
+          auth_before="$(sudo sha256sum /etc/gutsnet/cinema.htpasswd | cut -d ' ' -f1)"
+          cert_before="$(sha256sum /etc/ssl/certs/gutsnet.crt | cut -d ' ' -f1)"
+
+          # Una colision se rechaza antes de detener servicios o copiar datos.
+          printf 'Cinema\n' | sudo tee "$media/Colision.mp3" >/dev/null
+          printf 'FTP\n' | sudo tee "$exchange/Colision.mp3" >/dev/null
+          if sudo bash SERVER/shared/unify.sh --apply > "$RUNNER_TEMP/gutsnet-colision.log" 2>&1; then
+            echo 'ERROR: se acepto una colision'; exit 1
+          fi
+          grep -q 'Colision de nombres' "$RUNNER_TEMP/gutsnet-colision.log"
+          test "$(sudo cat "$media/Colision.mp3")" = Cinema
+          test "$(sudo cat "$exchange/Colision.mp3")" = FTP
+          sudo systemctl is-active --quiet apache2 vsftpd
+          test ! -e /etc/gutsnet/media-unificada
+          sudo rm "$media/Colision.mp3" "$exchange/Colision.mp3"
+
+          fstab_before="$(sha256sum /etc/fstab | cut -d ' ' -f1)"
+          sudo bash SERVER/shared/unify.sh --check
+          test "$fstab_before" = "$(sha256sum /etc/fstab | cut -d ' ' -f1)"
+          sudo bash SERVER/shared/unify.sh --apply
+          sudo bash SERVER/cinema/install.sh --install --skip-packages
+          sudo bash SERVER/ssh/install.sh --install
+          sudo bash SERVER/ftp/install.sh --install
+          sudo bash SERVER/shared/check.sh
+          sudo bash SERVER/cinema/check.sh
+          sudo bash SERVER/ssh/check.sh
+          sudo bash SERVER/ftp/check.sh
+          test "$before_media" = "$(sudo sha256sum "$media/Anterior Cinema.mp3" | cut -d ' ' -f1)"
+          test "$before_ftp" = "$(sudo sha256sum "$media/Anterior FTP.mp3" | cut -d ' ' -f1)"
+          test "$auth_before" = "$(sudo sha256sum /etc/gutsnet/cinema.htpasswd | cut -d ' ' -f1)"
+          test "$cert_before" = "$(sha256sum /etc/ssl/certs/gutsnet.crt | cut -d ' ' -f1)"
+
+          # Repetir la migracion no modifica fstab ni duplica respaldos.
+          fstab_after="$(sha256sum /etc/fstab | cut -d ' ' -f1)"
+          backups_before="$(sudo find /home/gutsnet-shared/.gutsnet-backups -mindepth 1 -maxdepth 1 | wc -l)"
+          sudo bash SERVER/shared/unify.sh --apply
+          test "$fstab_after" = "$(sha256sum /etc/fstab | cut -d ' ' -f1)"
+          test "$backups_before" = "$(sudo find /home/gutsnet-shared/.gutsnet-backups -mindepth 1 -maxdepth 1 | wc -l)"
+          sudo chmod 0755 "$stage"
+          if sudo bash SERVER/shared/check.sh > "$RUNNER_TEMP/gutsnet-staging.log" 2>&1; then
+            echo 'ERROR: staging publico no detectado'; exit 1
+          fi
+          grep -q 'Staging requiere permisos 700' "$RUNNER_TEMP/gutsnet-staging.log"
+          sudo chmod 0700 "$stage"
+          printf '{"web":"%s","linux":"%s"}\n' "$web_password" "$linux_password" | python3 SERVER/shared/tests/test_interfaces.py
+          sudo bash SERVER/shared/check.sh
+          unset web_password linux_password
+      - name: Diagnosticar un fallo
+        if: failure()
+        run: |
+          sudo journalctl -u apache2 -u ssh -u vsftpd -n 60 --no-pager || true
+          sudo findmnt /home/gutsnet-jail/compartido || true
+          sudo findmnt /home/gutsnet-shared/ftp/intercambio || true
+          sudo getfacl /home/gutsnet-shared/peliculas /home/gutsnet-shared/.cinema-incoming || true
+          sudo tail -n 30 /var/log/apache2/gutsnet_ssl_error.log || true

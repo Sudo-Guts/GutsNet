@@ -25,25 +25,38 @@ RSYNC_FLAGS := -rpt --delete --delete-excluded --no-links \
                --exclude=*.p12 \
                --exclude=*.pfx
 
-.PHONY: help check preview deploy test test-web install-cinema check-cinema test-cinema install-ssh check-ssh test-ssh
+.PHONY: help check preview deploy test test-web install-cinema check-cinema test-cinema install-ssh check-ssh test-ssh install-ftp check-ftp check-shared install-sockets check-sockets test-sockets status
 
 # ============================================================
 # Help
 # ============================================================
 
 help:
-	@echo "GutsNet - Comandos disponibles"
+	@echo "GutsNet - comandos desde la raiz del repositorio"
 	@echo ""
-	@echo "  make preview  - Mostrar cambios"
-	@echo "  make deploy   - Publicar sitio web"
-	@echo "  make test     - Comprobar Apache"
-	@echo "  make test-web - Verificar HTML, CSS, JS, audio, video y contador"
-	@echo "  make install-cinema - Configurar GutsCinema (pide sudo y contrasena de cine)"
-	@echo "  make check-cinema   - Revisar HTTPS, Apache y acceso privado"
-	@echo "  make test-cinema    - Probar el catalogo y la reproduccion con tu cuenta"
-	@echo "  make install-ssh - Configurar la cuenta gutsjail y su area compartida"
-	@echo "  make check-ssh   - Revisar aislamiento SSH y permisos de escritura"
-	@echo "  make test-ssh    - Probar la consola en una jaula temporal"
+	@echo "  CONSULTAR (no modifica servicios)"
+	@echo "  make status          Estado de Apache, FTP, SSH y sockets"
+	@echo "  make check-ftp       Comprobar el servidor FTPS"
+	@echo "  make check-ssh       Comprobar SSH Jail"
+	@echo "  make check-sockets   Comprobar los puertos Echo y Daytime"
+	@echo "  make check-cinema    Comprobar Cinema y HTTPS"
+	@echo "  make check-shared    Comprobar la biblioteca unificada tras migrarla"
+	@echo ""
+	@echo "  DESARROLLO Y PRUEBAS"
+	@echo "  make preview         Ver cambios web antes de publicarlos"
+	@echo "  make test-web        Probar web, recursos y contador desplegados"
+	@echo "  make test-cinema     Probar Cinema (requiere cuenta)"
+	@echo "  make test-ssh        Probar la consola en chroot temporal"
+	@echo "  make test-sockets    Compilar y probar clientes de sockets"
+	@echo ""
+	@echo "  INSTALACION / CAMBIOS EN EL SISTEMA"
+	@echo "  make deploy          Publicar la web con rsync --delete"
+	@echo "  make install-cinema  Instalar/actualizar Cinema"
+	@echo "  make install-ftp     Instalar/actualizar FTPS"
+	@echo "  make install-ssh     Instalar/actualizar SSH Jail"
+	@echo "  make install-sockets Instalar/actualizar servicios Echo/Daytime"
+	@echo ""
+	@echo "  Guia inicial: README.md | Arquitectura: DOC/Arquitectura.md"
 
 # ============================================================
 # Validation
@@ -107,3 +120,35 @@ check-ssh:
 
 test-ssh:
 	@sudo $(MAKE) -C "$(ROOT)/SERVER/ssh" test-jail
+
+# ============================================================
+# Servidores adicionales - acciones explicitas y separadas
+# ============================================================
+
+install-ftp:
+	@sudo bash "$(ROOT)/SERVER/ftp/install.sh" --install
+
+check-ftp:
+	@sudo bash "$(ROOT)/SERVER/ftp/check.sh"
+
+check-shared:
+	@sudo bash "$(ROOT)/SERVER/shared/check.sh"
+
+install-sockets:
+	@sudo bash "$(ROOT)/SERVER/sockets/install.sh" --install
+
+check-sockets:
+	@bash "$(ROOT)/SERVER/sockets/check.sh"
+
+test-sockets:
+	@$(MAKE) -C "$(ROOT)/C0DE/sockets" test
+
+# Solo consulta unidades; no hace cambios ni presupone que esten instaladas.
+status:
+	@echo "GutsNet - estado de servicios systemd"
+	@for unit in apache2 vsftpd ssh \
+	    gutsnet@echo_tcp_server.service gutsnet@echo_udp_server.service \
+	    gutsnet@daytime_tcp_server.service gutsnet@daytime_udp_server.service; do \
+	    printf "%-43s %s\\n" "$$unit" "$$(systemctl is-active "$$unit" 2>/dev/null || true)"; \
+	done
+	@echo "Puertos esperados: HTTP 80, HTTPS 443, FTPS 21 + 40000-40010, SSH 22, Echo 7, Daytime 13"

@@ -4,6 +4,23 @@
 > Las operaciones con `sudo` se realizan de manera explícita en el servidor.
 > Ejecutar desde la raíz `~/GutsNet` tras integrar la rama de desarrollo.
 
+## 0. Antes de modificar Ubuntu
+
+Revisa primero [Arquitectura](Arquitectura.md) y ejecuta desde la copia
+local del repositorio:
+
+```bash
+git status -sb
+git pull --ff-only origin main
+make help
+make status
+```
+
+**Mantén abierta una sesión SSH administrativa** antes de actualizar SSH Jail.
+Confirma los respaldos de configuración y no borres directorios privados.
+El sitio y la base de datos conservan rutas independientes. Cinema, FTPS y SSH
+pueden compartir su biblioteca después de la migración explícita.
+
 ## 1. Web pública
 
 Dependencias de Ubuntu:
@@ -49,14 +66,14 @@ make test-web
 
 ## 2. GutsCinema: biblioteca privada
 
-Desde `~/GutsNet`, en la rama que contiene el instalador:
+Desde `~/GutsNet`, con la rama principal ya actualizada:
 
 ```bash
 make install-cinema
 make test-cinema
 ```
 
-El instalador prepara Apache, HTTPS, almacenamiento privado y la cuenta `cine`.
+El instalador prepara Apache, HTTPS, almacenamiento privado y la cuenta web `gutsjail`.
 Solicita la contraseña de forma interactiva y conserva la existente al repetirse.
 La biblioteca se abre en **https://gutsnet.test/cinema/**.
 
@@ -73,10 +90,70 @@ cuentas y revisar las pruebas de autenticación y reproducción.
 La activación ocurre al ejecutar el instalador en Ubuntu; `git pull` no cambia
 los servicios ni crea credenciales por sí solo.
 
-## 3. Pendientes
+## 3. FTPS (vsftpd)
 
-- Incorporar el CV cuando exista.
-- Completar las páginas de prácticas de materias.
-- Configurar FTPS y el usuario SSH restringido por chroot.
-- Crear servicios TCP/UDP Echo y Daytime en C.
-- Documentar capturas con Wireshark.
+```bash
+sudo bash SERVER/ftp/install.sh --check
+make install-ftp
+sudo passwd gutsftp             # solo si la cuenta no tiene credencial válida
+make check-ftp
+```
+
+El servicio usa el puerto TCP 21, modo pasivo 40000–40010 y certificado TLS.
+El almacenamiento de intercambio se encuentra fuera de la raíz pública de Apache.
+En instalaciones anteriores, permanece separado de Cinema hasta migrarlo.
+No copies contraseñas, certificados privados ni archivos personales al Git.
+
+## 4. SSH Jail y SFTP
+
+**No cierres la sesión SSH administrativa** mientras cambias OpenSSH:
+
+```bash
+sudo bash SERVER/ssh/install.sh --check
+make install-ssh
+sudo passwd gutsjail            # si todavía no existe una contraseña válida
+make check-ssh
+```
+
+El usuario `gutsjail` accede a `/compartido` dentro de su chroot.
+Antes de migrar, FTPS y SFTP comparten solamente el directorio de intercambio. Para actualizar
+los comandos permitidos en la shell C después de un cambio del código,
+no basta con `git pull`: hay que instalar y verificar la nueva versión.
+Consulta [SSH Jail](../SERVER/ssh/README.md).
+
+## 5. Unificar Cinema, SSH/SFTP y FTPS
+
+Si los tres servicios ya están instalados, sigue [la guía de migración](../SERVER/shared/README.md).
+Primero ejecuta `sudo bash SERVER/shared/unify.sh --check`; la aplicación se
+realiza exclusivamente con `--apply`, durante una pausa de las sesiones de archivos.
+Después reinstala Cinema y ejecuta `make check-shared` y las verificaciones de cada servicio.
+Conserva la sesión administrativa abierta y prueba las interfaces antes de retirar cuentas anteriores.
+
+## 6. Echo y Daytime mediante systemd
+
+```bash
+sudo bash SERVER/sockets/install.sh --check
+make install-sockets
+make check-sockets
+make test-sockets
+```
+
+Se habilitan cuatro servicios en los puertos oficiales 7 y 13 TCP/UDP.
+Se ejecutan con permisos restringidos, no como `root`. El instalador
+no modifica Apache, FTP ni SSH.
+
+## 7. Comprobación final
+
+```bash
+make status
+make test-web
+make check-cinema
+make check-ftp
+make check-ssh
+make check-sockets
+```
+
+No reinstales módulos ya activos por rutina; usa `make install-*`
+solo cuando realmente necesites aplicar la configuración del repositorio.
+Revisa [Pruebas](Pruebas.md) para los clientes remotos y Wireshark.
+El CV y las capturas de evaluación se gestionan por separado.

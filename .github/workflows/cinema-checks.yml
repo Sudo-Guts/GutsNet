@@ -26,6 +26,8 @@ on:
 
 jobs:
   cinema:
+    # Fijar Ubuntu 24.04: Playwright 1.56.1 no admite el runner 26.04 y
+    # las pruebas de permisos del chroot se validaron previamente aqui.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4

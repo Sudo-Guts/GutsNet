@@ -38,10 +38,11 @@ películas importantes. La migración detiene temporalmente Apache y vsftpd.
 
     sudo bash SERVER/shared/unify.sh --apply
 
-   La herramienta detecta colisiones de nombres, copia el antiguo intercambio
+   La herramienta detecta colisiones de nombres antes de detener servicios, copia el antiguo intercambio
    sin sobrescribir archivos Cinema, preserva un respaldo antiguo y guarda
    una copia de /etc/fstab. No elimina archivos de usuario. Si falla entre
-   pasos, no repetir automáticamente: revisar montajes y respaldos.
+   pasos, no repetir automáticamente: revisar montajes y respaldos. Una migración
+   terminada sí puede repetirse: verifica el estado sin duplicar montajes ni respaldos.
 
 4. Actualizar Cinema INMEDIATAMENTE para utilizar staging privado:
 
@@ -49,7 +50,7 @@ películas importantes. La migración detiene temporalmente Apache y vsftpd.
 
 5. Verificar:
 
-    sudo bash SERVER/shared/check.sh
+    make check-shared
     make check-cinema
     make check-ssh
     make check-ftp
@@ -58,6 +59,23 @@ películas importantes. La migración detiene temporalmente Apache y vsftpd.
    subir por Cinema y descargar por SFTP; subir por SFTP y reproducir en
    Cinema; subir/descargar por FTPS con el login gutsjail; borrar desde web
    y comprobar en terminal; confirmar aislamiento y permisos sin sudo.
+
+La consola admite nombres como `"Mi canción.mp3"`; deben escribirse entre
+comillas cuando contienen espacios. No interpreta variables ni programas.
+Cinema muestra archivos multimedia del nivel principal; los subdirectorios
+se administran mediante SSH/SFTP y FTPS.
+
+## Pruebas automatizadas
+
+GitHub Actions instala los tres servicios en Ubuntu 24.04, prepara datos del
+almacenamiento anterior y ejecuta la migración real. Comprueba rechazo de
+colisiones, conservación del contenido, credenciales y certificados,
+reinstalación, repetición sin cambios y permisos privados del staging.
+Después usa `tests/test_interfaces.py` para subir por HTTPS/SFTP/FTPS,
+comparar descargas, reproducir rangos HTTP y eliminar desde otra interfaz.
+Las pruebas usan archivos con espacios y acentos, conservan el aislamiento
+del jail y comprueban que las credenciales anteriores no permitan entrar.
+Estas pruebas de un servidor temporal no sustituyen la verificación en la LAN.
 
 ## Retirar credenciales antiguas (solo al terminar las pruebas)
 

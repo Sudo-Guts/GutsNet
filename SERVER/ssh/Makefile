@@ -13,7 +13,11 @@ out:
 $(TARGET): $(SOURCE) | out
 	$(CC) $(CFLAGS) -static $< -o $@
 
-test: $(TARGET)
+out/test-parser: tests/test_parser.c $(SOURCE) | out
+	$(CC) $(CFLAGS) $< -o $@
+
+test: $(TARGET) out/test-parser
+	./out/test-parser
 	./$(TARGET) -c help
 	./$(TARGET) -c pwd
 	@if ./$(TARGET) -c 'cd /'; then \

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Unifica Cinema, SSH Jail/SFTP y FTPS; ejecutar SOLO con autorizacion.
+# Unifica Cinema, SSH Jail/SFTP y FTPS mediante una ejecucion explicita.
 set -Eeuo pipefail
 umask 077
 media=/home/gutsnet-shared/peliculas
@@ -19,7 +19,7 @@ same() {
 }
 preflight() {
     [[ $EUID == 0 ]] || die 'Ejecuta con sudo'
-    for cmd in rsync mount umount mountpoint setfacl getfacl htpasswd; do
+    for cmd in rsync mount umount mountpoint setfacl getfacl flock; do
         command -v "$cmd" >/dev/null || die "Falta $cmd"
     done
     for path in "$media" "$old" "$jail"; do
@@ -66,9 +66,18 @@ if [[ $1 == --check ]]; then
     exit 0
 fi
 
-# Crear primero contraseña web bajo el mismo nombre, sin imprimirla.
-htpasswd -v "$auth" gutsjail >/dev/null 2>&1 ||
+# La migracion comprueba la cuenta; las pruebas HTTPS verifican su contrasena.
+# No pedir una credencial con el prompt oculto al redirigir stderr.
+grep -q '^gutsjail:' "$auth" ||
     die "Primero ejecuta: sudo htpasswd -B $auth gutsjail"
+exec 9>/run/lock/gutsnet-media.lock
+flock -n 9 || die 'Ya hay una migracion en curso'
+preflight
+if [[ -f "$marker" ]] && same "$media" "$old" && same "$media" "$jail"; then
+    bash "$(dirname "$0")/check.sh"
+    log 'Biblioteca ya unificada; sin cambios'
+    exit 0
+fi
 if pgrep -u gutsjail >/dev/null 2>&1; then
     die 'Cierra las sesiones SSH/SFTP de gutsjail antes de migrar'
 fi
@@ -77,13 +86,14 @@ if id gutsftp >/dev/null 2>&1 && pgrep -u gutsftp >/dev/null 2>&1; then
 fi
 was_apache=0
 was_ftp=0
-if systemctl is-active --quiet apache2; then was_apache=1; systemctl stop apache2; fi
-if systemctl is-active --quiet vsftpd; then was_ftp=1; systemctl stop vsftpd; fi
 resume() {
     ((was_ftp == 0)) || systemctl start vsftpd || true
     ((was_apache == 0)) || systemctl start apache2 || true
 }
 trap resume EXIT
+if systemctl is-active --quiet apache2; then was_apache=1; systemctl stop apache2; fi
+if systemctl is-active --quiet vsftpd; then was_ftp=1; systemctl stop vsftpd; fi
+preflight
 
 if ! same "$media" "$old"; then
     log 'Copiando archivos FTP existentes, sin sobrescribir Cinema...'
@@ -95,6 +105,7 @@ if [[ -d "$oldstage" ]]; then
     mv -- "$oldstage" "$stage"
 fi
 install -d -o www-data -g www-data -m 700 "$stage"
+setfacl -b -k "$stage"
 chown www-data:www-data "$stage"
 chmod 0700 "$stage"
 
@@ -103,8 +114,9 @@ chown root:gutsnet-files "$media"
 chmod 2770 "$media"
 setfacl -m u:www-data:rwx,g:gutsnet-files:rwx,m::rwx,o::--- "$media"
 setfacl -m d:u:www-data:rwx,d:g:gutsnet-files:rwx,d:m::rwx,d:o::--- "$media"
-find "$media" -mindepth 1 -type d -exec setfacl -m u:www-data:rwx,g:gutsnet-files:rwx,m::rwx {} +
+find "$media" -mindepth 1 -type d -exec chgrp gutsnet-files {} + -exec chmod g+s {} + -exec setfacl -m u:www-data:rwx,g:gutsnet-files:rwx,m::rwx,d:u:www-data:rwx,d:g:gutsnet-files:rwx,d:m::rwx,d:o::--- {} +
 find "$media" -mindepth 1 -type f -exec setfacl -m u:www-data:rw-,g:gutsnet-files:rw-,m::rw- {} +
+usermod -a -G gutsnet-files www-data
 
 stamp="$(date +%Y%m%d-%H%M%S)-$$"
 backup=/home/gutsnet-shared/.gutsnet-backups

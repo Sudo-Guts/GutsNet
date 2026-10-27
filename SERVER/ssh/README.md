@@ -72,10 +72,11 @@ exit
 | `exit` | Cierra la sesión. |
 
 Se admiten rutas relativas y rutas que comiencen con `/compartido/`.
-Los componentes de los nombres usan letras sin acento, números, puntos,
-guiones y guiones bajos, sin espacios ni nombres ocultos. El texto de
-`write` sí admite espacios y acentos; se guarda literalmente.
-No interpreta redirecciones, variables ni otros comandos dentro del texto.
+Los nombres admiten UTF-8, acentos y espacios. Usa comillas cuando el nombre
+contenga espacios o signos que la consola reserva: `rm "Mi canción.mp3"`.
+También admite comillas simples y escapes; nunca expande variables ni ejecuta
+programas. Rechaza nombres ocultos, controles y UTF-8 inválido. El texto de
+`write` se guarda literalmente, incluidos sus espacios y acentos.
 
 En la raíz compartida, `cd ..` se rechaza. Desde una subcarpeta, `cd ..`
 solo permite volver hacia /compartido. Se rechazan rutas que salgan del área,
@@ -99,6 +100,8 @@ heredan el grupo compartido y los archivos se crean con permisos 660.
 Los cambios en /compartido también se reflejan en el intercambio FTPS, cuando
 ese servicio esté configurado.
 
+Antes de la migración, el instalador conserva el intercambio FTP anterior;
+actualizar la consola no cambia por sí solo el origen del montaje.
 Los archivos de Cinema son parte del directorio compartido después de aplicar
 la migración; su staging temporal queda fuera del chroot. El aislamiento del
 servidor proviene de `ChrootDirectory` y los permisos de Linux; la consola
@@ -134,7 +137,7 @@ make test-ssh
 
 La primera revisión comprueba la cuenta, el montaje, la escritura en el área,
 la protección de la raíz y las opciones efectivas de OpenSSH.
-La segunda crea una jaula temporal y ejecuta 14 pruebas con un UID sin
+La segunda crea una jaula temporal y ejecuta 16 pruebas con un UID sin
 privilegios: altas, bajas, navegación, grupo compartido, enlaces, rutas de
 escape, comandos prohibidos y entradas largas. Solo utiliza sus propios
 archivos temporales.

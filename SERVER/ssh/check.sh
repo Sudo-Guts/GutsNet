@@ -5,7 +5,8 @@ fail() { echo "ERROR: $*" >&2; exit 1; }
 ok() { echo "OK: $*"; }
 user=gutsjail
 jail=/home/gutsnet-jail
-shared=/home/gutsnet-shared/peliculas
+shared=/home/gutsnet-shared/ftp/intercambio
+[[ ! -f /etc/gutsnet/media-unificada ]] || shared=/home/gutsnet-shared/peliculas
 binary=/usr/local/bin/gutsnet-shell
 [[ "$EUID" == 0 ]] || fail "Ejecuta con sudo."
 [[ -x /usr/sbin/sshd ]] || fail "Falta sshd."
