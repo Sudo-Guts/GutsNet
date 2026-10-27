@@ -130,7 +130,12 @@ try {
         if ($staged === false || dirname($staged) !== CINEMA_INCOMING) {
             cinemaReject(500, "No se pudo preparar la carga del archivo.");
         }
-        if (!move_uploaded_file($temporary, $staged) || !chmod($staged, 0640)) {
+        // link() no hereda las ACL del directorio de destino:
+        // es obligatorio publicar el archivo con el grupo compartido.
+        $unified = is_file("/etc/gutsnet/media-unificada");
+        if (!move_uploaded_file($temporary, $staged)
+            || ($unified && !chgrp($staged, "gutsnet-files"))
+            || !chmod($staged, $unified ? 0660 : 0640)) {
             cinemaReject(500, "No se pudo guardar el archivo.");
         }
         $lock = cinemaLock();

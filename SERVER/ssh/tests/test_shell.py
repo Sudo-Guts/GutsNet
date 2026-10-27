@@ -165,6 +165,27 @@ class ShellTests(unittest.TestCase):
         self.assertEqual(result.stdout.count("prueba.txt"), 3)
         self.assertEqual(result.stderr, "")
 
+    def test_names_from_cinema_support_spaces_and_accents(self):
+        name = "Mi canción.mp3"
+        (self.shared / name).write_text("Contenido transferido por web o SFTP\n")
+        self.assertIn(name, self.ok("ls").stdout)
+        self.assertEqual(self.ok('cat "Mi canción.mp3"').stdout, "Contenido transferido por web o SFTP\n")
+        self.ok('rm "Mi canción.mp3"')
+        self.assertFalse((self.shared / name).exists())
+        self.ok('mkdir "Mis documentos"')
+        self.ok('write "Mis documentos/Señal.txt" Texto con acentos')
+        self.assertEqual(self.ok('cat "Mis documentos/Señal.txt"').stdout, "Texto con acentos\n")
+        self.ok('rm -r "Mis documentos"')
+
+    def test_quoted_metacharacters_remain_literal(self):
+        name = "$(literal);cita\".mp3"
+        (self.shared / name).write_text("Nombre literal\n")
+        self.ok("rm '$(literal);cita\".mp3'")
+        self.assertFalse((self.shared / name).exists())
+        for command in ('rm "sin cerrar', "touch uno;id", "touch fin\\", "rm '../secreto.txt'"):
+            with self.subTest(command=command):
+                self.denied(command)
+
     def test_cat_rejects_fifo_and_large_files(self):
         os.mkfifo(self.shared / "tuberia")
         (self.shared / "grande.txt").write_bytes(b"a" * (1024 * 1024 + 1))

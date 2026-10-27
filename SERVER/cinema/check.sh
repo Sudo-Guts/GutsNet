@@ -11,6 +11,7 @@ key=/etc/ssl/private/gutsnet.key
 ca=/etc/ssl/certs/gutsnet-ca.crt
 auth=/etc/gutsnet/cinema.htpasswd
 storage=/home/gutsnet-shared/peliculas
+incoming=/home/gutsnet-shared/.cinema-incoming
 for path in "$cert" "$key" "$auth"; do [[ -s "$path" && ! -L "$path" ]] || fail "Falta archivo regular: $path"; done
 [[ -d "$storage" && ! -L "$storage" ]] || fail 'Falta la carpeta privada de peliculas.'
 [[ "$(stat -c '%U' "$key")" == root ]] || fail 'La llave TLS debe pertenecer a root.'
@@ -21,10 +22,10 @@ mode="$(stat -c '%a' "$auth")"
 runuser -u www-data -- test -r "$auth" || fail 'Apache no puede leer las cuentas.'
 runuser -u www-data -- test -r "$storage" && runuser -u www-data -- test -x "$storage" || fail 'Apache no puede leer las peliculas.'
 runuser -u www-data -- test -w "$storage" || fail 'Apache no puede agregar ni eliminar archivos de Cinema. Ejecuta make install-cinema.'
-[[ -d "$storage/.incoming" && ! -L "$storage/.incoming" ]] || fail 'Falta el area privada de carga. Ejecuta make install-cinema.'
-runuser -u www-data -- test -x "$storage/.incoming" && runuser -u www-data -- test -w "$storage/.incoming" \
+[[ -d "$incoming" && ! -L "$incoming" ]] || fail 'Falta el area privada de carga. Ejecuta make install-cinema.'
+runuser -u www-data -- test -x "$incoming" && runuser -u www-data -- test -w "$incoming" \
     || fail 'Apache no puede recibir archivos de Cinema. Ejecuta make install-cinema.'
-lock="$storage/.incoming/.lock"
+lock="$incoming/.lock"
 [[ ! -L "$lock" ]] || fail 'El bloqueo de Cinema no puede ser un enlace simbolico.'
 if [[ -e "$lock" ]]; then
     [[ -f "$lock" ]] || fail 'El bloqueo de Cinema no es un archivo regular.'
@@ -36,7 +37,7 @@ if [[ -d /run/systemd/system ]]; then
         || fail 'Falta systemctl o nsenter (util-linux) para comprobar el servicio de Apache.'
     apache_pid="$(systemctl show apache2.service --property=MainPID --value)"
     [[ "$apache_pid" =~ ^[1-9][0-9]*$ ]] || fail 'El servicio de Apache no esta activo.'
-    for path in "$storage" "$storage/.incoming"; do
+    for path in "$storage" "$incoming"; do
         if ! nsenter --target "$apache_pid" --mount -- runuser -u www-data -- test -w "$path"; then
             systemctl show apache2.service --property=ProtectHome --property=ProtectSystem \
                 --property=ReadWritePaths >&2

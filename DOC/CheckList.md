@@ -1,6 +1,6 @@
 # GutsNet — checklist de entrega
 
-**Última revisión del estado conocido:** 22 de octubre de 2026.
+**Última revisión del código y pendientes:** 27 de octubre de 2026.
 
 **Convención:** comprobado = observado en el servidor durante las pruebas del
 20 de octubre; disponible en Git = existe el código, pero puede necesitar
@@ -14,6 +14,10 @@ desplegarse otra vez; pendiente = falta evidencia o un entregable.
 - [x] Cliente y servidor Daytime TCP/UDP en C.
 - [x] Makefile y scripts de instalación/verificación.
 - [x] Integrar la rama `web/pastel-lab` en `main` (PR #2).
+- [x] Reestructurar documentación y comandos (PR #3).
+- [x] Preparar biblioteca unificada y migración explícita (PR #4).
+- [x] Añadir pruebas de migración, colisiones, conservación de datos y accesos cruzados en CI.
+- [ ] Aplicar la migración de la biblioteca en el Ubuntu del usuario.
 - [ ] Revisar en Ubuntu los cambios de web, Cinema y SSH incorporados en PR #2.
 - [ ] Confirmar que no quedan cambios locales sin integrar o respaldar.
 
@@ -40,6 +44,8 @@ desplegarse otra vez; pendiente = falta evidencia o un entregable.
 - [x] SSH administrativo permaneció activo tras instalar Jail.
 - [ ] Probar descarga SFTP desde sesión remota.
 - [ ] Aplicar/verificar las nuevas funciones de archivos del Jail (PR #2).
+- [ ] Verificar Cinema, SSH/SFTP y FTPS con `gutsjail` sobre los mismos archivos.
+- [ ] Retirar las credenciales anteriores después de comprobar los nuevos accesos.
 - [ ] Comprobar FTPS y SSH/SFTP desde otra computadora de la LAN.
 - [ ] Revisar contraseñas y permisos antes de la demostración.
 

@@ -25,7 +25,7 @@ RSYNC_FLAGS := -rpt --delete --delete-excluded --no-links \
                --exclude=*.p12 \
                --exclude=*.pfx
 
-.PHONY: help check preview deploy test test-web install-cinema check-cinema test-cinema install-ssh check-ssh test-ssh install-ftp check-ftp install-sockets check-sockets test-sockets status
+.PHONY: help check preview deploy test test-web install-cinema check-cinema test-cinema install-ssh check-ssh test-ssh install-ftp check-ftp check-shared install-sockets check-sockets test-sockets status
 
 # ============================================================
 # Help
@@ -40,6 +40,7 @@ help:
 	@echo "  make check-ssh       Comprobar SSH Jail"
 	@echo "  make check-sockets   Comprobar los puertos Echo y Daytime"
 	@echo "  make check-cinema    Comprobar Cinema y HTTPS"
+	@echo "  make check-shared    Comprobar la biblioteca unificada tras migrarla"
 	@echo ""
 	@echo "  DESARROLLO Y PRUEBAS"
 	@echo "  make preview         Ver cambios web antes de publicarlos"
@@ -129,6 +130,9 @@ install-ftp:
 
 check-ftp:
 	@sudo bash "$(ROOT)/SERVER/ftp/check.sh"
+
+check-shared:
+	@sudo bash "$(ROOT)/SERVER/shared/check.sh"
 
 install-sockets:
 	@sudo bash "$(ROOT)/SERVER/sockets/install.sh" --install

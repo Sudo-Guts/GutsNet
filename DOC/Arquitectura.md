@@ -1,106 +1,76 @@
 # Arquitectura de GutsNet
 
-**Objetivo:** que cada servicio sea identificable, instalable y comprobable
-sin conocer todos los demás. El repositorio contiene **código y plantillas**;
-Ubuntu conserva **credenciales, datos y procesos** fuera de Git.
+El repositorio conserva código y plantillas. Ubuntu mantiene credenciales,
+datos y procesos fuera de Git; cada instalación o migración es explícita.
 
-## Mapa de los servicios
+## Servicios y almacenamiento
 
-```text
-                    RED LOCAL (LAN)
-                           |
-                +----------+-----------+
-                | Ubuntu Server GutsNet|
-                |                      |
-   TCP 80/443 --+ Apache / PHP / SQLite+-- /var/lib/gutsnet/ (contador)
-                |          |           |
-                |      GutsCinema -----+-- /home/gutsnet-shared/peliculas/
-                |                      |
-     TCP 21 ----+ FTPS / vsftpd --------+-- /home/gutsnet-shared/ftp/intercambio/
-                |                      |                 ^
-     TCP 22 ----+ SSH admin (guts)      |                 |
-                | SSH Jail (gutsjail) --+-- /home/gutsnet-jail/compartido/
-                |                              (bind mount)
-  TCP/UDP 7 ----+ Echo RFC 862         |
-  TCP/UDP 13 ---+ Daytime RFC 867      |
-                +----------------------+
-```
-
-**FTP y SSH Jail** comparten solamente el área `intercambio`.
-**Cinema** utiliza almacenamiento privado distinto; **el contador** tiene
-almacenamiento persistente independiente. Los archivos publicados por Apache
-no incluyen esos directorios.
-
-## Dos capas distintas
-
-### 1. Archivos versionados: repositorio Git
-
-- `C0DE/web/public/`: recursos web y la aplicación PHP que sirve Apache.
-- `C0DE/sockets/src/`: implementaciones de Echo y Daytime en C.
-- `SERVER/`: configuración, instaladores y verificadores para Ubuntu.
-- `scripts/`: validaciones internas de la web; no son servicios residentes.
-- `.github/workflows/`: pruebas automáticas en GitHub Actions.
-- `DOC/`: manuales y evidencias.
-
-### 2. Estado real: Ubuntu Server
-
-| Ruta o proceso | Función |
-| --- | --- |
-| `/var/www/gutsnet/public/` | Sitio desplegado desde el repositorio |
-| `/var/lib/gutsnet/visitas.sqlite` | Contador de visitas persistente |
-| `/home/gutsnet-shared/peliculas/` | Biblioteca privada de Cinema |
-| `/home/gutsnet-shared/ftp/intercambio/` | Archivos de FTP/SFTP |
-| `/home/gutsnet-jail/` | Raíz del chroot del usuario restringido |
-| `/usr/local/libexec/gutsnet/` | Ejecutables systemd de Echo/Daytime |
-| `/etc/apache2/`, `/etc/ssh/`, `/etc/vsftpd.conf` | Configuraciones activas |
-| `/etc/gutsnet/` y `/etc/ssl/private/` | Credenciales y material privado |
-
-Modificar un archivo de Git **no modifica automáticamente** su copia activa
-en `/etc` o `/var/www`. Esta separación evita cambios sorpresa,
-pero exige despliegues explícitos.
-
-## Interfaces de red y protocolos
-
-| Componente | Puerto habitual | Protocolo |
+| Servicio | Acceso | Almacenamiento |
 | --- | --- | --- |
-| Sitio público | 80 | HTTP/TCP |
-| Cinema privado | 443 | HTTPS/TCP |
-| FTPS explícito | 21 y 40000–40010 | FTP + TLS/TCP |
-| SSH administrativo, Jail y SFTP | 22 | SSH/TCP |
-| Echo | 7 | TCP y UDP |
-| Daytime | 13 | TCP y UDP |
+| Portafolio | HTTP 80 y HTTPS 443 | /var/www/gutsnet/public |
+| Contador PHP/SQLite | POST /api/visitas.php | /var/lib/gutsnet/visitas.sqlite |
+| Cinema privado | HTTPS 443, /cinema/ | /home/gutsnet-shared/peliculas |
+| FTPS explícito | TCP 21 y pasivos 40000–40010 | /home/gutsnet-shared/ftp/intercambio |
+| SSH administrativo | TCP 22, usuario guts | Sistema Linux |
+| SSH Jail/SFTP | TCP 22, usuario gutsjail | /home/gutsnet-jail/compartido |
+| Echo RFC 862 | TCP y UDP 7 | Ejecutables en /usr/local/libexec/gutsnet |
+| Daytime RFC 867 | TCP y UDP 13 | Ejecutables en /usr/local/libexec/gutsnet |
 
-El acceso remoto debe verificarse desde otro equipo de la **misma LAN**;
-usar la IP del propio servidor desde el servidor mismo produce una ruta
-`local ... dev lo` y no prueba conectividad entre equipos.
+Después de la migración, las tres rutas de Cinema, FTPS y SSH Jail señalan
+el mismo directorio mediante montajes bind. El almacenamiento canónico es
+/home/gutsnet-shared/peliculas; los archivos no se duplican entre interfaces.
+El staging /home/gutsnet-shared/.cinema-incoming es privado para www-data
+y queda fuera de los directorios editables por gutsjail.
 
-## Orden de dependencia recomendado
+Antes de migrar, Cinema permanece separado de FTPS/SFTP. Los instaladores de
+SSH y FTPS conservan ese estado hasta que la migración crea el marcador
+/etc/gutsnet/media-unificada. Actualizar el repositorio no cambia montajes.
 
-1. Red e IP del servidor, Ubuntu y SSH administrativo.
-2. Apache, PHP, SQLite y sitio público.
-3. HTTPS, Cinema y su almacenamiento privado.
-4. FTPS y el directorio compartido.
-5. SSH Jail, chroot y SFTP (intercambio compartido con FTPS).
-6. Servidores Echo y Daytime mediante systemd.
-7. Pruebas remotas y capturas Wireshark.
+## Usuarios y permisos
 
-**Atención:** el instalador SSH más reciente puede preparar el área de
-intercambio si falta, pero validar FTPS primero facilita el diagnóstico.
+Los usuarios de uso cotidiano son guts (administración) y gutsjail (archivos).
+root y www-data son cuentas técnicas. La biblioteca usa el grupo
+gutsnet-files, SGID y ACL heredables para compartir operaciones sin dar
+privilegios administrativos a gutsjail.
 
-## Tres categorías de comandos
+Cinema autoriza únicamente el nombre gutsjail mediante Apache Basic Auth y
+/etc/gutsnet/cinema.htpasswd. SSH/SFTP y FTPS autentican la cuenta Linux.
+La contraseña web es independiente de la contraseña Linux; no hay
+sincronización automática. Las credenciales anteriores se retiran después
+de comprobar los tres accesos, según SERVER/shared/README.md.
 
-- **Consulta:** `make help`, `make status`,
-  `make check-ftp`, `make check-ssh`,
-  `make check-sockets`, `make check-cinema`.
-- **Pruebas:** `make test-web`, `make test-sockets`,
-  `make test-ssh`, `make test-cinema`; algunas modifican
-  datos de prueba (como el contador) y necesitan un servicio activo.
-- **Cambios efectivos:** `make deploy` y los objetivos
-  `make install-*`; requieren revisar el sistema y sus respaldos.
+## Capas del proyecto
 
-## Simplificación deliberada
+| Ruta | Responsabilidad |
+| --- | --- |
+| C0DE/web/public | Aplicación y recursos publicados |
+| C0DE/sockets | Clientes y servidores en C |
+| SERVER/apache, cinema, ftp, ssh, sockets | Configuración, instalación y verificación |
+| SERVER/shared | Migración explícita y pruebas de la biblioteca común |
+| scripts | Pruebas web y versiones de recursos |
+| .github/workflows | Validación en servidores temporales de GitHub Actions |
+| DOC | Arquitectura, instalación, pruebas y pendientes |
 
-Se conservan las rutas `C0DE/`, `SERVER/` y `scripts/`
-para no romper rutas absolutas, Makefiles y pruebas existentes.
-La reestructuración comienza por **claridad, navegación y comandos coherentes**;
-no borra scripts de seguridad o pruebas solo porque sean numerosos.
+No guardar películas privadas, bases de datos ni credenciales en el directorio
+publicado: make deploy sincroniza esa ruta con rsync --delete.
+Las configuraciones activas están en /etc/apache2, /etc/ssh y /etc/vsftpd.conf;
+el material privado está en /etc/gutsnet y /etc/ssl/private.
+
+## Dependencias y verificación
+
+1. Preparar red, Ubuntu y SSH administrativo.
+2. Instalar Apache/PHP/SQLite y publicar el sitio.
+3. Configurar Cinema, HTTPS, FTPS y SSH Jail.
+4. Revisar y aplicar la migración de SERVER/shared cuando corresponda.
+5. Comprobar altas, bajas, descargas y reproducción entre interfaces.
+6. Instalar o comprobar Echo/Daytime con systemd.
+7. Probar desde otro equipo de la LAN y guardar evidencias de Wireshark.
+
+Usar la IP del propio servidor desde el servidor puede seguir una ruta
+local por lo; eso no prueba comunicación entre dos computadoras.
+
+make help, make status y los objetivos make check-* consultan el estado.
+make test-* ejecuta pruebas que pueden crear datos temporales o incrementar
+el contador. make deploy y make install-* aplican cambios efectivos.
+La migración requiere sudo bash SERVER/shared/unify.sh --apply y una
+sesión administrativa abierta; no se ejecuta con git pull.

@@ -14,7 +14,7 @@ from http.cookies import SimpleCookie
 from urllib.parse import quote, urlencode
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--user", default="cine")
+parser.add_argument("--user", default="gutsjail")
 parser.add_argument("--ca", required=True)
 parser.add_argument("--host", default="gutsnet.test")
 args = parser.parse_args()

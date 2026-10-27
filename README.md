@@ -40,6 +40,7 @@ configuraciones de Apache, instala servicios ni publica la web. Consulta
 | `SERVER/ftp/` | Configuración, instalación y verificación de FTPS |
 | `SERVER/ssh/` | Usuario restringido, chroot, shell C y SFTP |
 | `SERVER/sockets/` | Unidades systemd de Echo/Daytime |
+| `SERVER/shared/` | Migración y pruebas de la biblioteca común de Cinema, SFTP y FTPS |
 | `scripts/` | Herramientas internas de pruebas y versiones de recursos |
 | `DOC/` | Arquitectura, progreso, instalación y pruebas |
 
@@ -57,6 +58,12 @@ explícitamente en Ubuntu antes de afirmarse que funciona allí.
 Quedan como tareas de entrega el CV definitivo, pruebas entre dos equipos y
 capturas de Wireshark. Véase [Checklist](DOC/CheckList.md).
 
+La biblioteca unificada usa `/home/gutsnet-shared/peliculas/` y la cuenta
+`gutsjail` en Cinema, SSH/SFTP y FTPS; `guts` conserva la administración Linux.
+Las instalaciones anteriores mantienen sus directorios separados hasta aplicar
+la [migración explícita](SERVER/shared/README.md). La contraseña web se administra
+por separado de la contraseña Linux, aunque el nombre de usuario sea el mismo.
+
 ## Comandos por subsistema
 
 ```bash
@@ -73,6 +80,7 @@ make install-cinema         # cambio explícito en el servidor
 # FTP y SSH
 make check-ftp
 make check-ssh
+make check-shared           # después de migrar la biblioteca
 make install-ftp            # cambio explícito
 make install-ssh            # cambio explícito
 

@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'SERVER/cinema/**'
+      - 'SERVER/shared/**'
       - 'SERVER/apache/**'
       - 'C0DE/web/public/**'
       - 'scripts/version-web-assets.py'
@@ -112,16 +113,16 @@ jobs:
           auth_before="$(sudo sha256sum /etc/gutsnet/cinema.htpasswd | cut -d ' ' -f1)"
           cert_before="$(sha256sum /etc/ssl/certs/gutsnet.crt | cut -d ' ' -f1)"
           movie_before="$(sudo sha256sum /home/gutsnet-shared/peliculas/Prueba_GutsCinema.mp4 | cut -d ' ' -f1)"
-          sudo chown root:root /home/gutsnet-shared/peliculas/.incoming/.lock
-          sudo chmod 0600 /home/gutsnet-shared/peliculas/.incoming/.lock
+          sudo chown root:root /home/gutsnet-shared/.cinema-incoming/.lock
+          sudo chmod 0600 /home/gutsnet-shared/.cinema-incoming/.lock
           if sudo bash SERVER/cinema/check.sh > "$RUNNER_TEMP/cinema-lock.log" 2>&1; then
             echo 'ERROR: no se detecto el bloqueo inaccesible'
             exit 1
           fi
           grep -q 'Apache no puede abrir el bloqueo de Cinema' "$RUNNER_TEMP/cinema-lock.log"
           sudo chown root:root /home/gutsnet-shared/peliculas \
-            /home/gutsnet-shared/peliculas/.incoming
-          sudo chmod 0700 /home/gutsnet-shared/peliculas /home/gutsnet-shared/peliculas/.incoming
+            /home/gutsnet-shared/.cinema-incoming
+          sudo chmod 0700 /home/gutsnet-shared/peliculas /home/gutsnet-shared/.cinema-incoming
           sudo bash SERVER/cinema/install.sh --install --skip-packages
           test "$auth_before" = "$(sudo sha256sum /etc/gutsnet/cinema.htpasswd | cut -d ' ' -f1)"
           test "$cert_before" = "$(sha256sum /etc/ssl/certs/gutsnet.crt | cut -d ' ' -f1)"
@@ -141,7 +142,7 @@ jobs:
             sudo tee /home/gutsnet-shared/peliculas/prohibido.php >/dev/null
           sudo ln -s /etc/passwd /home/gutsnet-shared/peliculas/enlace.mp4
           cinema_request() {
-            printf 'user = "cine:%s"\n' "$cinema_password" | curl --config - \
+            printf 'user = "gutsjail:%s"\n' "$cinema_password" | curl --config - \
               --noproxy '*' --silent --show-error \
               --cacert /etc/ssl/certs/gutsnet-ca.crt \
               --resolve gutsnet.test:443:127.0.0.1 "$@"
@@ -167,7 +168,7 @@ jobs:
         if: failure()
         run: |
           sudo stat -c '%A %U:%G %n' /home/gutsnet-shared \
-            /home/gutsnet-shared/peliculas /home/gutsnet-shared/peliculas/.incoming || true
+            /home/gutsnet-shared/peliculas /home/gutsnet-shared/.cinema-incoming || true
           sudo runuser -u www-data -- id || true
           sudo systemctl show apache2.service --property=ProtectHome --property=ProtectSystem \
             --property=ReadWritePaths || true

@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - "SERVER/ssh/**"
+      - "SERVER/shared/**"
       - ".github/workflows/ssh-checks.yml"
       - "Makefile"
   pull_request:
     paths:
       - "SERVER/ssh/**"
+      - "SERVER/shared/**"
       - ".github/workflows/ssh-checks.yml"
       - "Makefile"
 

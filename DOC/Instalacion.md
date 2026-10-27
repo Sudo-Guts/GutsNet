@@ -18,7 +18,8 @@ make status
 
 **Mantén abierta una sesión SSH administrativa** antes de actualizar SSH Jail.
 Confirma los respaldos de configuración y no borres directorios privados.
-El sitio público, la base de datos, Cinema, FTPS y SSH usan rutas diferentes.
+El sitio y la base de datos conservan rutas independientes. Cinema, FTPS y SSH
+pueden compartir su biblioteca después de la migración explícita.
 
 ## 1. Web pública
 
@@ -72,7 +73,7 @@ make install-cinema
 make test-cinema
 ```
 
-El instalador prepara Apache, HTTPS, almacenamiento privado y la cuenta `cine`.
+El instalador prepara Apache, HTTPS, almacenamiento privado y la cuenta web `gutsjail`.
 Solicita la contraseña de forma interactiva y conserva la existente al repetirse.
 La biblioteca se abre en **https://gutsnet.test/cinema/**.
 
@@ -99,7 +100,8 @@ make check-ftp
 ```
 
 El servicio usa el puerto TCP 21, modo pasivo 40000–40010 y certificado TLS.
-El almacenamiento de intercambio se encuentra fuera de Apache y Cinema.
+El almacenamiento de intercambio se encuentra fuera de la raíz pública de Apache.
+En instalaciones anteriores, permanece separado de Cinema hasta migrarlo.
 No copies contraseñas, certificados privados ni archivos personales al Git.
 
 ## 4. SSH Jail y SFTP
@@ -114,12 +116,20 @@ make check-ssh
 ```
 
 El usuario `gutsjail` accede a `/compartido` dentro de su chroot.
-FTPS y SFTP comparten solamente el directorio de intercambio. Para actualizar
+Antes de migrar, FTPS y SFTP comparten solamente el directorio de intercambio. Para actualizar
 los comandos permitidos en la shell C después de un cambio del código,
 no basta con `git pull`: hay que instalar y verificar la nueva versión.
 Consulta [SSH Jail](../SERVER/ssh/README.md).
 
-## 5. Echo y Daytime mediante systemd
+## 5. Unificar Cinema, SSH/SFTP y FTPS
+
+Si los tres servicios ya están instalados, sigue [la guía de migración](../SERVER/shared/README.md).
+Primero ejecuta `sudo bash SERVER/shared/unify.sh --check`; la aplicación se
+realiza exclusivamente con `--apply`, durante una pausa de las sesiones de archivos.
+Después reinstala Cinema y ejecuta `make check-shared` y las verificaciones de cada servicio.
+Conserva la sesión administrativa abierta y prueba las interfaces antes de retirar cuentas anteriores.
+
+## 6. Echo y Daytime mediante systemd
 
 ```bash
 sudo bash SERVER/sockets/install.sh --check
@@ -132,7 +142,7 @@ Se habilitan cuatro servicios en los puertos oficiales 7 y 13 TCP/UDP.
 Se ejecutan con permisos restringidos, no como `root`. El instalador
 no modifica Apache, FTP ni SSH.
 
-## 6. Comprobación final
+## 7. Comprobación final
 
 ```bash
 make status

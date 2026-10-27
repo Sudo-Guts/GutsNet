@@ -1,6 +1,14 @@
 /*
- * GutsNet: consola sin programas externos para OpenSSH ChrootDirectory.
- * Todas las operaciones se anclan a /compartido con openat y O_NOFOLLOW.
+ * =============================================================================
+ *  Proyecto : GutsNet
+ *  Archivo  : SERVER/ssh/src/gutsnet_shell.c
+ *  Autor    : No indicado en la version original
+ * -----------------------------------------------------------------------------
+ *
+ *  Consola de archivos para OpenSSH ChrootDirectory. Resuelve rutas desde
+ *  /compartido mediante descriptores y O_NOFOLLOW, sin ejecutar otros programas.
+ *
+ * =============================================================================
  */
 #define _POSIX_C_SOURCE 200809L
 #include <dirent.h>
@@ -24,12 +32,35 @@ static char current[PATH_MAX_BYTES] = "";
 
 enum result { COMMAND_OK, COMMAND_ERROR, COMMAND_EXIT };
 
-static int safe_name(const char *name)
-{
+/**
+ * @brief Valida un componente UTF-8 compatible con los nombres de Cinema.
+ * @param name Nombre sin componentes de ruta.
+ * @return 1 si el nombre es valido; 0 si contiene controles o UTF-8 invalido.
+ */
+static int safe_name(const char *name) {
     if (name[0] == '\0' || name[0] == '.' || strlen(name) > NAME_MAX_BYTES) return 0;
+    if (name[0] == ' ' || name[strlen(name) - 1] == ' ') return 0;
     for (const unsigned char *p = (const unsigned char *)name; *p; ++p) {
-        if (!((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') ||
-              (*p >= '0' && *p <= '9') || *p == '.' || *p == '_' || *p == '-')) return 0;
+        if (*p < 0x20 || *p == 0x7f || *p == '/' || *p == '\\') return 0;
+        if (*p < 0x80) continue;
+        unsigned int codepoint;
+        unsigned int continuation;
+        unsigned int minimum;
+        if (*p >= 0xc2 && *p <= 0xdf) {
+            codepoint = *p & 0x1fU; continuation = 1; minimum = 0x80;
+        } else if (*p >= 0xe0 && *p <= 0xef) {
+            codepoint = *p & 0x0fU; continuation = 2; minimum = 0x800;
+        } else if (*p >= 0xf0 && *p <= 0xf4) {
+            codepoint = *p & 0x07U; continuation = 3; minimum = 0x10000;
+        } else {
+            return 0;
+        }
+        for (unsigned int i = 0; i < continuation; ++i) {
+            ++p;
+            if ((*p & 0xc0U) != 0x80U) return 0;
+            codepoint = (codepoint << 6) | (*p & 0x3fU);
+        }
+        if (codepoint < minimum || codepoint > 0x10ffff || (codepoint >= 0xd800 && codepoint <= 0xdfff)) return 0;
     }
     return 1;
 }
@@ -40,7 +71,8 @@ static void show_help(void)
     puts("write <archivo> <texto>, cat <archivo>, mkdir <carpeta>,");
     puts("rm <archivo>, rmdir <carpeta-vacia>, rm -r <carpeta>, exit");
     puts("write crea un documento nuevo; el texto se guarda literalmente.");
-    puts("Usa nombres sin espacios: letras, numeros, guion, punto y guion bajo.");
+    puts("Usa comillas para nombres con espacios: rm \"Mi cancion.mp3\".");
+    puts("Acepta nombres UTF-8; las comillas no ejecutan variables ni programas.");
     puts("Solo puedes navegar y modificar /compartido y sus subcarpetas.");
     puts("Para subir o descargar documentos completos, usa SFTP.");
 }
@@ -240,24 +272,51 @@ static int remove_tree(int parent, const char *name, unsigned int depth)
     return unlinkat(parent, name, AT_REMOVEDIR);
 }
 
-static char *next_word(char **cursor)
-{
+/**
+ * @brief Extrae un argumento con comillas y escapes, sin expansion de shell.
+ * @param cursor Posicion de lectura; avanza al siguiente argumento.
+ * @param invalid Recibe 1 si faltan comillas o aparece un operador sin comillas.
+ * @return Argumento dentro del mismo buffer, o NULL al terminar o fallar.
+ */
+static char *next_word(char **cursor, int *invalid) {
     *cursor += strspn(*cursor, " \t");
     if (**cursor == '\0') return NULL;
     char *word = *cursor;
-    *cursor += strcspn(*cursor, " \t");
-    if (**cursor != '\0') *(*cursor)++ = '\0';
+    char *read_cursor = word;
+    char *write_cursor = word;
+    char quote = '\0';
+    while (*read_cursor) {
+        char value = *read_cursor++;
+        if (!quote && (value == ' ' || value == '\t')) break;
+        if (value == '\'' || value == '"') {
+            if (!quote) { quote = value; continue; }
+            if (quote == value) { quote = '\0'; continue; }
+        }
+        if (value == '\\') {
+            if (!*read_cursor) { *invalid = 1; return NULL; }
+            value = *read_cursor++;
+        } else if (!quote && strchr(";|&<>`$()", value)) {
+            *invalid = 1;
+            return NULL;
+        }
+        *write_cursor++ = value;
+    }
+    if (quote) { *invalid = 1; return NULL; }
+    *write_cursor = '\0';
+    *cursor = read_cursor;
     return word;
 }
 
-static enum result run_line(char *line)
-{
+static enum result run_line(char *line) {
     char *end = line + strlen(line);
     while (end > line && strchr("\r\n \t", end[-1])) *--end = '\0';
     char *cursor = line;
-    char *command = next_word(&cursor);
+    int invalid = 0;
+    char *command = next_word(&cursor, &invalid);
+    if (invalid) goto usage;
     if (!command) return COMMAND_OK;
-    char *argument = next_word(&cursor);
+    char *argument = next_word(&cursor, &invalid);
+    if (invalid) goto usage;
     if (!strcmp(command, "help") || !strcmp(command, "pwd") || !strcmp(command, "exit")) {
         if (argument) goto usage;
         if (!strcmp(command, "help")) show_help();
@@ -274,9 +333,10 @@ static enum result run_line(char *line)
     } else {
         if (!strcmp(command, "rm") && argument && !strcmp(argument, "-r")) {
             recursive = 1;
-            argument = next_word(&cursor);
+            argument = next_word(&cursor, &invalid);
+            if (invalid) goto usage;
         }
-        if (next_word(&cursor)) goto usage;
+        if (next_word(&cursor, &invalid) || invalid) goto usage;
     }
     int listing = !strcmp(command, "ls"), changing = !strcmp(command, "cd");
     if (!listing && !changing && strcmp(command, "cat") && strcmp(command, "touch") &&
