@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # GutsNet - verificacion LOCAL de FTPS. No modifica el sistema.
 set -Eeuo pipefail
+source "$(dirname "$0")/login-home.sh"
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 ok() { printf 'OK: %s\n' "$*"; }
 ftp_root="/home/gutsnet-shared/ftp"
@@ -28,6 +29,8 @@ mode="$(stat -c '%a' "$ftp_root")"
 systemctl is-active --quiet vsftpd || fail "Servicio vsftpd inactivo"
 ok "Servicio vsftpd activo"
 if ((unified)); then
+    [[ -d /compartido ]] || fail 'Falta el directorio de entrada FTPS del host'
+    check_ftps_login_home || fail 'Directorio de entrada FTPS invalido'
     mountpoint -q "$exchange" || fail "FTPS no tiene montaje de biblioteca"
     [[ "$(stat -Lc '%d:%i' "$exchange")" == "$(stat -Lc '%d:%i' "$media")" ]] || fail "FTPS no apunta a Cinema"
     ok "FTPS comparte la biblioteca de Cinema y SSH Jail"

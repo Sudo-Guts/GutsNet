@@ -9,7 +9,7 @@ instalacion manual posterior en Ubuntu Server.
 | Directorio | Dueno:grupo / permisos | Funcion |
 | --- | --- | --- |
 | /home/gutsnet-shared | Existente; sin modificaciones | Base del proyecto |
-| /home/gutsnet-shared/peliculas | root:www-data / 750 | Cinema; fuera del FTPS |
+| /home/gutsnet-shared/peliculas | root:gutsnet-files / 2770 tras migrar | Biblioteca canónica de Cinema, SSH/SFTP y FTPS |
 | /home/gutsnet-shared/ftp | root:root / 755 | Raiz del chroot FTP, sin escritura |
 | /home/gutsnet-shared/ftp/intercambio | root:gutsnet-files / 2770 | Subida y descarga |
 
@@ -17,8 +17,8 @@ instalacion manual posterior en Ubuntu Server.
 - Autenticacion PAM dedicada: /etc/pam.d/gutsnet-vsftpd; no se modifica
   la politica PAM global ni /etc/shells.
 - Acceso de usuarios por lista blanca; no hay FTP anonimo.
-- Grupo gutsnet-files reservado para compartir archivos con el futuro
-  usuario SSH restringido. Tras unificar, intercambia exactamente la misma biblioteca de Cinema.
+- Grupo gutsnet-files compartido con el usuario SSH restringido.
+  Tras unificar, intercambia exactamente la misma biblioteca de Cinema.
 - Conexiones FTPS explicitamente cifradas con TLS 1.2/1.3, incluyendo datos.
 - Puerto TCP 21 y modo pasivo TCP 40000 a 40010.
 - Reutiliza el certificado HTTPS ya existente en
@@ -27,6 +27,12 @@ instalacion manual posterior en Ubuntu Server.
 
 FTPS y SFTP son protocolos diferentes. Este modulo configura FTPS;
 el modulo SSH se prepara de forma independiente.
+
+Para usar gutsjail, vsftpd necesita entrar al home Linux antes de aplicar
+local_root. La migración y el instalador preparan `/compartido` en el host
+como directorio vacío root:root 755. No es otro almacenamiento: dentro del
+chroot FTP la biblioteca está en `/intercambio`, y dentro del jail SSH está
+en `/compartido`. Si la ruta del host contiene datos ajenos, no se modifica.
 
 ## Instalacion diferida
 
@@ -47,7 +53,9 @@ Cuando el servidor vuelva a estar disponible, desde el repositorio:
     # Validar estado y directorios:
     sudo bash SERVER/ftp/check.sh
 
-El instalador NO modifica /home/gutsnet-shared/peliculas, Apache ni SSH.
+Antes de migrar, el instalador conserva la biblioteca separada de Cinema.
+Después de migrar, /intercambio es un montaje de la biblioteca común; la
+reinstalación conserva ese montaje y su contenido. No reconfigura Apache ni SSH.
 Antes de reemplazar /etc/vsftpd.conf guarda una copia fechada
 en /etc/vsftpd.conf.gutsnet-backup-... para restaurar si es necesario.
 Si ya hay otra configuracion FTP en uso, revisa el impacto antes de

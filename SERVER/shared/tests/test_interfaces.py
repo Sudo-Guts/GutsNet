@@ -2,7 +2,7 @@
 """Prueba HTTPS, SSH/SFTP y FTPS reales; recibe contrasenas web/linux como JSON por stdin."""
 import argparse
 import base64
-from ftplib import FTP_TLS, error_perm
+from ftplib import FTP, FTP_TLS, error_perm
 from html.parser import HTMLParser
 from http.cookies import SimpleCookie
 import http.client
@@ -47,6 +47,15 @@ class LocalHTTPS(http.client.HTTPSConnection):
     def connect(self):
         transport = socket.create_connection(("127.0.0.1", 443), timeout=self.timeout)
         self.sock = self._context.wrap_socket(transport, server_hostname="gutsnet.test")
+
+
+class ResumingFTP(FTP_TLS):
+    """Conserva la reutilizacion TLS exigida por vsftpd para el canal de datos."""
+    def ntransfercmd(self, command, rest=None):
+        connection, size = FTP.ntransfercmd(self, command, rest)
+        if self._prot_p:
+            connection = self.context.wrap_socket(connection, server_hostname=self.host, session=self.sock.session)
+        return connection, size
 
 
 class Web:
@@ -126,6 +135,8 @@ def main():
     linux_password = credentials["linux"]
     assert web_password and linux_password
     context = ssl.create_default_context(cafile=args.ca)
+    ftp_context = ssl.create_default_context(cafile=args.ca)
+    ftp_context.maximum_version = ssl.TLSVersion.TLSv1_2
     web = Web(context, web_password)
     root = Path(__file__).resolve().parents[3]
     audio = (root / "C0DE/web/public/assets/audio/ambiente2.mp3").read_bytes()
@@ -153,7 +164,7 @@ def main():
             sftp("get " + sftp_quote("/compartido/" + name) + " " + sftp_quote(target))
             assert target.read_bytes() == payload, "SFTP altero el contenido"
 
-        ftp = FTP_TLS(context=context, encoding="utf-8", timeout=30)
+        ftp = ResumingFTP(context=ftp_context, encoding="utf-8", timeout=30)
         ftp.connect("127.0.0.1", 21)
         ftp.login("gutsjail", linux_password)
         ftp.prot_p()
@@ -209,7 +220,7 @@ def main():
                 raise AssertionError("FTPS accedio fuera del chroot")
             except error_perm:
                 pass
-            denied = FTP_TLS(context=context, timeout=10)
+            denied = ResumingFTP(context=ftp_context, timeout=10)
             try:
                 denied.connect("127.0.0.1", 21)
                 try:

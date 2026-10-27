@@ -25,9 +25,10 @@ El instalador:
   sus permisos. El directorio de carga temporal está fuera de la biblioteca, en `/home/gutsnet-shared/.cinema-incoming`, accesible solo por Apache.
 - Configura PHP para recibir un archivo de hasta **2 GiB** (2048 MiB), con margen
   para el formulario multipart y hasta una hora para recibirlo.
-- En equipos con systemd, instala una excepción `ReadWritePaths` únicamente para
-  `/home/gutsnet-shared/peliculas`. Permite gestionar Cinema cuando el servicio de
-  Apache tiene `ProtectHome=read-only`, como en paquetes recientes de Debian/Ubuntu.
+- En equipos con systemd, instala una excepción `ReadWritePaths` para
+  `/home/gutsnet-shared`, de modo que staging y biblioteca estén en el mismo
+  montaje y puedan publicar archivos con `link()`. Los permisos y ACL limitan
+  las rutas donde Apache puede escribir, incluso con `ProtectHome=read-only`.
 - Conserva el área de FTP, las películas existentes y el contador de visitas.
 - Reutiliza un certificado TLS existente que cubra `gutsnet.test`. Si no hay
   certificado ni llave, crea una CA local y un certificado para el nombre del

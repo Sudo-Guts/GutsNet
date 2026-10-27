@@ -2,6 +2,7 @@
 # Unifica Cinema, SSH Jail/SFTP y FTPS mediante una ejecucion explicita.
 set -Eeuo pipefail
 umask 077
+source "$(dirname "$0")/../ftp/login-home.sh"
 media=/home/gutsnet-shared/peliculas
 old=/home/gutsnet-shared/ftp/intercambio
 jail=/home/gutsnet-jail/compartido
@@ -19,6 +20,7 @@ same() {
 }
 preflight() {
     [[ $EUID == 0 ]] || die 'Ejecuta con sudo'
+    check_ftps_login_home
     for cmd in rsync mount umount mountpoint setfacl getfacl flock; do
         command -v "$cmd" >/dev/null || die "Falta $cmd"
     done
@@ -84,6 +86,7 @@ fi
 if id gutsftp >/dev/null 2>&1 && pgrep -u gutsftp >/dev/null 2>&1; then
     die 'Cierra las sesiones FTPS de gutsftp antes de migrar'
 fi
+prepare_ftps_login_home
 was_apache=0
 was_ftp=0
 resume() {

@@ -4,6 +4,7 @@
 set -Eeuo pipefail
 
 here="$(cd -- "$(dirname -- "$0")" && pwd)"
+source "$here/login-home.sh"
 source_conf="$here/vsftpd.conf"
 root="/home/gutsnet-shared"
 ftp_root="$root/ftp"
@@ -34,6 +35,7 @@ HELP
 }
 
 preflight() {
+    [[ "$ftp_user" != gutsjail ]] || check_ftps_login_home
     [[ -f "$source_conf" ]] || die "No existe $source_conf"
     [[ -f "$pam_src" ]] || die "No existe $pam_src"
     [[ -s "$cert" ]] || die "Falta certificado TLS: $cert"
@@ -103,6 +105,7 @@ do_install() {
     [[ "$EUID" -eq 0 ]] || die "Ejecuta con sudo."
     preflight
     command -v apt-get >/dev/null || die "Se necesita Ubuntu/Debian con apt-get."
+    [[ "$ftp_user" != gutsjail ]] || prepare_ftps_login_home
 
     info "Instalando vsftpd..."
     apt-get update

@@ -17,6 +17,11 @@ Montaje SSH: /home/gutsnet-jail/compartido
 Montaje FTPS: /home/gutsnet-shared/ftp/intercambio
 
 Las tres rutas señalan el mismo directorio, sin duplicar archivos.
+vsftpd entra primero al home Linux antes de aplicar su chroot. Para conservar
+el home `/compartido` de SSH, la migración prepara en el host un directorio
+vacío `/compartido`, root:root 755. No contiene ni monta archivos de usuario;
+la ruta con ese nombre dentro del jail sí apunta a la biblioteca. Si el
+directorio del host ya existe con otros datos o permisos, se detiene sin alterarlo.
 El staging de Cinema se mueve fuera de la biblioteca, a
 /home/gutsnet-shared/.cinema-incoming, privado para www-data.
 
