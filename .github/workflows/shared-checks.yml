@@ -59,6 +59,10 @@ jobs:
           linux_password="$(openssl rand -hex 24)"
           echo "::add-mask::$web_password"
           echo "::add-mask::$linux_password"
+          # Certificado anterior valido para el nombre, sin SAN de loopback/IP.
+          sudo openssl req -x509 -newkey rsa:3072 -sha256 -nodes -days 2 -keyout /etc/ssl/private/gutsnet.key -out /etc/ssl/certs/gutsnet.crt -subj '/CN=gutsnet.test' -addext 'subjectAltName=DNS:gutsnet.test' -addext 'basicConstraints=critical,CA:FALSE' -addext 'keyUsage=critical,digitalSignature,keyEncipherment' -addext 'extendedKeyUsage=serverAuth' >/dev/null 2>&1
+          sudo chmod 0600 /etc/ssl/private/gutsnet.key
+          sudo chmod 0644 /etc/ssl/certs/gutsnet.crt
           printf '%s\n' "$web_password" | sudo bash SERVER/cinema/install.sh --install --skip-packages --password-stdin
           sudo bash SERVER/ftp/install.sh --install
           sudo bash SERVER/ssh/install.sh --install
@@ -142,7 +146,7 @@ jobs:
           fi
           grep -q 'Staging requiere permisos 700' "$RUNNER_TEMP/gutsnet-staging.log"
           sudo chmod 0700 "$stage"
-          printf '{"web":"%s","linux":"%s"}\n' "$web_password" "$linux_password" | python3 SERVER/shared/tests/test_interfaces.py
+          printf '{"web":"%s","linux":"%s"}\n' "$web_password" "$linux_password" | python3 SERVER/shared/tests/test_interfaces.py --ca /etc/ssl/certs/gutsnet.crt
           sudo bash SERVER/shared/check.sh
           unset web_password linux_password
       - name: Diagnosticar un fallo

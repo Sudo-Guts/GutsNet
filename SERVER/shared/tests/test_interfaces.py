@@ -50,7 +50,13 @@ class LocalHTTPS(http.client.HTTPSConnection):
 
 
 class ResumingFTP(FTP_TLS):
-    """Conserva la reutilizacion TLS exigida por vsftpd para el canal de datos."""
+    """Valida gutsnet.test por loopback y reutiliza TLS en el canal de datos."""
+    def connect(self, port=21):
+        response = super().connect("127.0.0.1", port)
+        # FTP_TLS usa self.host para validar ambos canales, no para resolver PASV.
+        self.host = "gutsnet.test"
+        return response
+
     def ntransfercmd(self, command, rest=None):
         connection, size = FTP.ntransfercmd(self, command, rest)
         if self._prot_p:
@@ -165,7 +171,7 @@ def main():
             assert target.read_bytes() == payload, "SFTP altero el contenido"
 
         ftp = ResumingFTP(context=ftp_context, encoding="utf-8", timeout=30)
-        ftp.connect("127.0.0.1", 21)
+        ftp.connect()
         ftp.login("gutsjail", linux_password)
         ftp.prot_p()
         ftp.cwd("/intercambio")
@@ -222,7 +228,7 @@ def main():
                 pass
             denied = ResumingFTP(context=ftp_context, timeout=10)
             try:
-                denied.connect("127.0.0.1", 21)
+                denied.connect()
                 try:
                     denied.login("gutsftp", linux_password)
                     raise AssertionError("La cuenta FTPS anterior sigue autorizada")

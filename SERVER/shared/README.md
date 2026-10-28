@@ -81,6 +81,10 @@ Después usa `tests/test_interfaces.py` para subir por HTTPS/SFTP/FTPS,
 comparar descargas, reproducir rangos HTTP y eliminar desde otra interfaz.
 Las pruebas usan archivos con espacios y acentos, conservan el aislamiento
 del jail y comprueban que las credenciales anteriores no permitan entrar.
+El certificado de prueba cubre solo `gutsnet.test`, sin direcciones IP.
+HTTPS y FTPS conectan a loopback y validan ese nombre con TLS, incluidos
+los canales de control y datos de FTPS. No se requiere resolver el nombre
+por DNS ni reemplazar un certificado existente por faltar `127.0.0.1`.
 Estas pruebas de un servidor temporal no sustituyen la verificación en la LAN.
 
 ## Comprobación de permisos en Ubuntu 26.04
