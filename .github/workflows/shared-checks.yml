@@ -152,6 +152,7 @@ jobs:
           sudo findmnt /home/gutsnet-jail/compartido || true
           sudo findmnt /home/gutsnet-shared/ftp/intercambio || true
           sudo getfacl /home/gutsnet-shared/peliculas /home/gutsnet-shared/.cinema-incoming || true
+          sudo namei -l /var/www/gutsnet/public || true
           sudo stat -c '%A %U:%G %n' /compartido || true
           sudo tail -n 30 /var/log/vsftpd.log | sed '/PASS /d' || true
           sudo tail -n 30 /var/log/apache2/gutsnet_ssl_error.log || true

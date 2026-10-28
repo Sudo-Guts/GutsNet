@@ -92,6 +92,9 @@ integrado de Bash bajo la identidad correspondiente, también dentro del
 espacio de montajes de Apache. Se conservan las comprobaciones de lectura,
 recorrido, escritura y aislamiento. La opción `-p` evita cargar funciones y
 archivos de inicio desde el entorno; no otorga privilegios al usuario.
+El despliegue también establece explícitamente el modo 755 del directorio
+padre de la web para que una instalación nueva con umask 077 sea recorrible
+por Apache.
 
 Referencia: [fallo de test en Ubuntu 26.04](https://github.com/actions/runner-images/issues/15004).
 
