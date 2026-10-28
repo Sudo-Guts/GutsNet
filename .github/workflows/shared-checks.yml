@@ -28,7 +28,11 @@ permissions:
 
 jobs:
   shared:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -97,6 +101,30 @@ jobs:
           sudo bash SERVER/cinema/check.sh
           sudo bash SERVER/ssh/check.sh
           sudo bash SERVER/ftp/check.sh
+
+          # Las ACL pueden negar escritura aunque el grupo tenga rwx.
+          sudo setfacl -m u:www-data:r-x "$media"
+          if sudo bash SERVER/cinema/check.sh > "$RUNNER_TEMP/cinema-acl.log" 2>&1; then
+            echo 'ERROR: Cinema acepto una ACL sin escritura'; exit 1
+          fi
+          grep -q 'Apache no puede agregar ni eliminar' "$RUNNER_TEMP/cinema-acl.log"
+          if sudo bash SERVER/shared/check.sh > "$RUNNER_TEMP/shared-apache-acl.log" 2>&1; then
+            echo 'ERROR: biblioteca acepto una ACL sin escritura para Apache'; exit 1
+          fi
+          grep -q 'Apache sin escritura' "$RUNNER_TEMP/shared-apache-acl.log"
+          sudo setfacl -m u:www-data:rwx "$media"
+          sudo setfacl -m u:gutsjail:r-x "$media"
+          if sudo bash SERVER/ssh/check.sh > "$RUNNER_TEMP/ssh-acl.log" 2>&1; then
+            echo 'ERROR: SSH acepto una ACL sin escritura'; exit 1
+          fi
+          grep -q 'La cuenta no puede crear ni eliminar' "$RUNNER_TEMP/ssh-acl.log"
+          if sudo bash SERVER/shared/check.sh > "$RUNNER_TEMP/shared-jail-acl.log" 2>&1; then
+            echo 'ERROR: biblioteca acepto una ACL sin escritura para gutsjail'; exit 1
+          fi
+          grep -q 'Jail sin escritura' "$RUNNER_TEMP/shared-jail-acl.log"
+          sudo setfacl -x u:gutsjail "$media"
+          sudo bash SERVER/shared/check.sh
+
           test "$before_media" = "$(sudo sha256sum "$media/Anterior Cinema.mp3" | cut -d ' ' -f1)"
           test "$before_ftp" = "$(sudo sha256sum "$media/Anterior FTP.mp3" | cut -d ' ' -f1)"
           test "$auth_before" = "$(sudo sha256sum /etc/gutsnet/cinema.htpasswd | cut -d ' ' -f1)"

@@ -130,8 +130,9 @@ install_jail() {
     else
         usermod -a -G "$GROUP" "$USER_NAME"
     fi
-    if ! runuser -u "$USER_NAME" -- test -w "$JAIL/compartido" \
-        || ! runuser -u "$USER_NAME" -- test -x "$JAIL/compartido"; then
+    # Bash respeta ACL y grupos suplementarios, a diferencia de test en uutils 0.10.
+    if ! runuser -u "$USER_NAME" -- /bin/bash -p -c 'builtin test "$@"' -- -w "$JAIL/compartido" \
+        || ! runuser -u "$USER_NAME" -- /bin/bash -p -c 'builtin test "$@"' -- -x "$JAIL/compartido"; then
         runuser -u "$USER_NAME" -- id >&2
         stat -c '%A %U:%G %n' /home /home/gutsnet-shared /home/gutsnet-shared/ftp \
             "$SHARED" "$JAIL" "$JAIL/compartido" >&2

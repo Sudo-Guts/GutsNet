@@ -72,15 +72,28 @@ se administran mediante SSH/SFTP y FTPS.
 
 ## Pruebas automatizadas
 
-GitHub Actions instala los tres servicios en Ubuntu 24.04, prepara datos del
+GitHub Actions instala los tres servicios en Ubuntu 24.04 y 26.04, prepara datos del
 almacenamiento anterior y ejecuta la migración real. Comprueba rechazo de
 colisiones, conservación del contenido, credenciales y certificados,
-reinstalación, repetición sin cambios y permisos privados del staging.
+reinstalación, repetición sin cambios, permisos privados del staging y rechazo
+de ACL que niegan escritura a www-data o gutsjail.
 Después usa `tests/test_interfaces.py` para subir por HTTPS/SFTP/FTPS,
 comparar descargas, reproducir rangos HTTP y eliminar desde otra interfaz.
 Las pruebas usan archivos con espacios y acentos, conservan el aislamiento
 del jail y comprueban que las credenciales anteriores no permitan entrar.
 Estas pruebas de un servidor temporal no sustituyen la verificación en la LAN.
+
+## Comprobación de permisos en Ubuntu 26.04
+
+`test` de rust-coreutils 0.10.0 no evalúa correctamente las ACL ni los grupos
+suplementarios. Puede rechazar una biblioteca accesible o aceptar permisos
+que una ACL niega. Los instaladores y verificaciones ejecutan el `test`
+integrado de Bash bajo la identidad correspondiente, también dentro del
+espacio de montajes de Apache. Se conservan las comprobaciones de lectura,
+recorrido, escritura y aislamiento. La opción `-p` evita cargar funciones y
+archivos de inicio desde el entorno; no otorga privilegios al usuario.
+
+Referencia: [fallo de test en Ubuntu 26.04](https://github.com/actions/runner-images/issues/15004).
 
 ## Retirar credenciales antiguas (solo al terminar las pruebas)
 

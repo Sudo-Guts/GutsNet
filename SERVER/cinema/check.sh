@@ -19,17 +19,18 @@ mode="$(stat -c '%a' "$key")"
 (( (8#$mode & 0077) == 0 )) || fail 'La llave TLS permite acceso a grupo u otros.'
 mode="$(stat -c '%a' "$auth")"
 (( (8#$mode & 0007) == 0 )) || fail 'El archivo de cuentas permite acceso a otros usuarios.'
-runuser -u www-data -- test -r "$auth" || fail 'Apache no puede leer las cuentas.'
-runuser -u www-data -- test -r "$storage" && runuser -u www-data -- test -x "$storage" || fail 'Apache no puede leer las peliculas.'
-runuser -u www-data -- test -w "$storage" || fail 'Apache no puede agregar ni eliminar archivos de Cinema. Ejecuta make install-cinema.'
+# Bash respeta ACL y grupos suplementarios, a diferencia de test en uutils 0.10.
+runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -r "$auth" || fail 'Apache no puede leer las cuentas.'
+runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -r "$storage" && runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -x "$storage" || fail 'Apache no puede leer las peliculas.'
+runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -w "$storage" || fail 'Apache no puede agregar ni eliminar archivos de Cinema. Ejecuta make install-cinema.'
 [[ -d "$incoming" && ! -L "$incoming" ]] || fail 'Falta el area privada de carga. Ejecuta make install-cinema.'
-runuser -u www-data -- test -x "$incoming" && runuser -u www-data -- test -w "$incoming" \
+runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -x "$incoming" && runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -w "$incoming" \
     || fail 'Apache no puede recibir archivos de Cinema. Ejecuta make install-cinema.'
 lock="$incoming/.lock"
 [[ ! -L "$lock" ]] || fail 'El bloqueo de Cinema no puede ser un enlace simbolico.'
 if [[ -e "$lock" ]]; then
     [[ -f "$lock" ]] || fail 'El bloqueo de Cinema no es un archivo regular.'
-    runuser -u www-data -- test -w "$lock" \
+    runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -w "$lock" \
         || fail 'Apache no puede abrir el bloqueo de Cinema. Ejecuta make install-cinema.'
 fi
 if [[ -d /run/systemd/system ]]; then
@@ -38,7 +39,7 @@ if [[ -d /run/systemd/system ]]; then
     apache_pid="$(systemctl show apache2.service --property=MainPID --value)"
     [[ "$apache_pid" =~ ^[1-9][0-9]*$ ]] || fail 'El servicio de Apache no esta activo.'
     for path in "$storage" "$incoming"; do
-        if ! nsenter --target "$apache_pid" --mount -- runuser -u www-data -- test -w "$path"; then
+        if ! nsenter --target "$apache_pid" --mount -- runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -w "$path"; then
             systemctl show apache2.service --property=ProtectHome --property=ProtectSystem \
                 --property=ReadWritePaths >&2
             fail 'El servicio de Apache ve Cinema sin escritura. Ejecuta make install-cinema para aplicar la excepcion de systemd.'

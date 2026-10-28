@@ -94,7 +94,7 @@ jobs:
           sudo rm /etc/systemd/system/apache2.service.d/gutsnet-cinema.conf
           sudo systemctl daemon-reload
           sudo systemctl restart apache2
-          sudo runuser -u www-data -- test -w /home/gutsnet-shared/peliculas
+          sudo runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -w /home/gutsnet-shared/peliculas
           if sudo bash SERVER/cinema/check.sh > "$RUNNER_TEMP/cinema-home.log" 2>&1; then
             echo 'ERROR: no se detecto Cinema sin escritura dentro del servicio'
             exit 1
