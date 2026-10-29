@@ -28,7 +28,11 @@ permissions:
 
 jobs:
   shared:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -55,6 +59,10 @@ jobs:
           linux_password="$(openssl rand -hex 24)"
           echo "::add-mask::$web_password"
           echo "::add-mask::$linux_password"
+          # Certificado anterior valido para el nombre, sin SAN de loopback/IP.
+          sudo openssl req -x509 -newkey rsa:3072 -sha256 -nodes -days 2 -keyout /etc/ssl/private/gutsnet.key -out /etc/ssl/certs/gutsnet.crt -subj '/CN=gutsnet.test' -addext 'subjectAltName=DNS:gutsnet.test' -addext 'basicConstraints=critical,CA:FALSE' -addext 'keyUsage=critical,digitalSignature,keyEncipherment' -addext 'extendedKeyUsage=serverAuth' >/dev/null 2>&1
+          sudo chmod 0600 /etc/ssl/private/gutsnet.key
+          sudo chmod 0644 /etc/ssl/certs/gutsnet.crt
           printf '%s\n' "$web_password" | sudo bash SERVER/cinema/install.sh --install --skip-packages --password-stdin
           sudo bash SERVER/ftp/install.sh --install
           sudo bash SERVER/ssh/install.sh --install
@@ -97,6 +105,30 @@ jobs:
           sudo bash SERVER/cinema/check.sh
           sudo bash SERVER/ssh/check.sh
           sudo bash SERVER/ftp/check.sh
+
+          # Las ACL pueden negar escritura aunque el grupo tenga rwx.
+          sudo setfacl -m u:www-data:r-x "$media"
+          if sudo bash SERVER/cinema/check.sh > "$RUNNER_TEMP/cinema-acl.log" 2>&1; then
+            echo 'ERROR: Cinema acepto una ACL sin escritura'; exit 1
+          fi
+          grep -q 'Apache no puede agregar ni eliminar' "$RUNNER_TEMP/cinema-acl.log"
+          if sudo bash SERVER/shared/check.sh > "$RUNNER_TEMP/shared-apache-acl.log" 2>&1; then
+            echo 'ERROR: biblioteca acepto una ACL sin escritura para Apache'; exit 1
+          fi
+          grep -q 'Apache sin escritura' "$RUNNER_TEMP/shared-apache-acl.log"
+          sudo setfacl -m u:www-data:rwx "$media"
+          sudo setfacl -m u:gutsjail:r-x "$media"
+          if sudo bash SERVER/ssh/check.sh > "$RUNNER_TEMP/ssh-acl.log" 2>&1; then
+            echo 'ERROR: SSH acepto una ACL sin escritura'; exit 1
+          fi
+          grep -q 'La cuenta no puede crear ni eliminar' "$RUNNER_TEMP/ssh-acl.log"
+          if sudo bash SERVER/shared/check.sh > "$RUNNER_TEMP/shared-jail-acl.log" 2>&1; then
+            echo 'ERROR: biblioteca acepto una ACL sin escritura para gutsjail'; exit 1
+          fi
+          grep -q 'Jail sin escritura' "$RUNNER_TEMP/shared-jail-acl.log"
+          sudo setfacl -x u:gutsjail "$media"
+          sudo bash SERVER/shared/check.sh
+
           test "$before_media" = "$(sudo sha256sum "$media/Anterior Cinema.mp3" | cut -d ' ' -f1)"
           test "$before_ftp" = "$(sudo sha256sum "$media/Anterior FTP.mp3" | cut -d ' ' -f1)"
           test "$auth_before" = "$(sudo sha256sum /etc/gutsnet/cinema.htpasswd | cut -d ' ' -f1)"
@@ -114,7 +146,7 @@ jobs:
           fi
           grep -q 'Staging requiere permisos 700' "$RUNNER_TEMP/gutsnet-staging.log"
           sudo chmod 0700 "$stage"
-          printf '{"web":"%s","linux":"%s"}\n' "$web_password" "$linux_password" | python3 SERVER/shared/tests/test_interfaces.py
+          printf '{"web":"%s","linux":"%s"}\n' "$web_password" "$linux_password" | python3 SERVER/shared/tests/test_interfaces.py --ca /etc/ssl/certs/gutsnet.crt
           sudo bash SERVER/shared/check.sh
           unset web_password linux_password
       - name: Diagnosticar un fallo
@@ -124,6 +156,7 @@ jobs:
           sudo findmnt /home/gutsnet-jail/compartido || true
           sudo findmnt /home/gutsnet-shared/ftp/intercambio || true
           sudo getfacl /home/gutsnet-shared/peliculas /home/gutsnet-shared/.cinema-incoming || true
+          sudo namei -l /var/www/gutsnet/public || true
           sudo stat -c '%A %U:%G %n' /compartido || true
           sudo tail -n 30 /var/log/vsftpd.log | sed '/PASS /d' || true
           sudo tail -n 30 /var/log/apache2/gutsnet_ssl_error.log || true

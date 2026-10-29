@@ -28,10 +28,11 @@ source_id="$(stat -Lc '%d:%i' "$shared")"
 target_id="$(stat -Lc '%d:%i' "$jail/compartido")"
 [[ "$source_id" == "$target_id" ]] ||
     fail "Montaje compartido inesperado (origen $source_id, destino $target_id)"
-runuser -u "$user" -- test -w "$jail/compartido" \
-    && runuser -u "$user" -- test -x "$jail/compartido" \
+# Bash respeta ACL y grupos suplementarios, a diferencia de test en uutils 0.10.
+runuser -u "$user" -- /bin/bash -p -c 'builtin test "$@"' -- -w "$jail/compartido" \
+    && runuser -u "$user" -- /bin/bash -p -c 'builtin test "$@"' -- -x "$jail/compartido" \
     || fail 'La cuenta no puede crear ni eliminar en /compartido'
-if runuser -u "$user" -- test -w "$jail"; then fail 'La cuenta puede modificar la raiz del jail'; fi
+if runuser -u "$user" -- /bin/bash -p -c 'builtin test "$@"' -- -w "$jail"; then fail 'La cuenta puede modificar la raiz del jail'; fi
 [[ -x "$binary" && -x "$jail$binary" ]] || fail 'No existe shell restringida'
 if readelf -l "$jail$binary" | grep -q INTERP; then fail 'Shell no estatica'; fi
 ok 'Cuenta restringida, shell estatica, chroot y bind mount'

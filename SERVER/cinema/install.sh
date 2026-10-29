@@ -127,9 +127,10 @@ if [[ -e "$incoming/.lock" ]]; then
     chown www-data:www-data "$incoming/.lock"
     chmod 0600 "$incoming/.lock"
 fi
-runuser -u www-data -- test -r "$storage" && runuser -u www-data -- test -x "$storage" \
+# Bash respeta ACL y grupos suplementarios, a diferencia de test en uutils 0.10.
+runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -r "$storage" && runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -x "$storage" \
     || fail "Apache no puede leer/recorrer $storage. Revisa sus permisos sin alterar el area de FTP."
-runuser -u www-data -- test -w "$storage" && runuser -u www-data -- test -w "$incoming" \
+runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -w "$storage" && runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -w "$incoming" \
     || fail 'Apache no tiene escritura en la biblioteca dedicada.'
 install -d -o root -g www-data -m 750 "$auth_dir"
 install -d -o root -g root -m 700 "$tls_dir"
@@ -251,7 +252,7 @@ else
 fi
 chown www-data:www-data "$incoming"
 chmod 0700 "$incoming"
-if ! runuser -u www-data -- test -w "$storage"; then
+if ! runuser -u www-data -- /bin/bash -p -c 'builtin test "$@"' -- -w "$storage"; then
     stat -c '%A %U:%G %n' "$shared" "$storage" "$incoming" >&2
     fail 'Apache no tiene escritura en la biblioteca dedicada.'
 fi

@@ -82,7 +82,8 @@ preview: check
 
 deploy: check
 	@echo "Publicando GutsNet..."
-	@sudo install -d -o root -g root -m 755 "$(DST)"
+	@# Dar modo explicito al padre evita heredar umask 077 con rust-coreutils.
+	@sudo install -d -o root -g root -m 755 "$$(dirname -- "$(DST)")" "$(DST)"
 	@sudo rsync $(RSYNC_FLAGS) "$(SRC)/" "$(DST)/"
 	@echo "GutsNet actualizado correctamente."
 
