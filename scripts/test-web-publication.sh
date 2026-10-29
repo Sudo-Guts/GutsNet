@@ -39,7 +39,7 @@ run_check() {
 }
 
 run_check
-for relative in "index.html" "assets/css/style.css" "assets/js/main.js"; do
+for relative in "index.html" "assets/css/style.css" "assets/js/main.js" "cv.html" "assets/docs/Gustavo_Ruiz_Luis_CV.pdf"; do
     printf '\n/* simular una version publicada distinta */\n' >> "$tmp/public/$relative"
     if run_check > "$tmp/result.log" 2>&1; then
         echo "ERROR: no se detecto el recurso desactualizado: $relative" >&2
