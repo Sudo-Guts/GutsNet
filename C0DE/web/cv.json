@@ -1,0 +1,68 @@
+{
+    "name": "Gustavo Ruiz Luis",
+    "role": "Estudiante de Ingeniería en Electrónica",
+    "focus": "Sistemas embebidos · Diseño digital · Linux",
+    "profile": "Desarrollo proyectos que conectan hardware y software: procesadores RISC-V, adquisición y procesamiento de voz y servicios en Linux. Trabajo con C, Verilog y herramientas de terminal para implementar, probar y documentar cada etapa.",
+    "education": {
+        "degree": "Ingeniería en Electrónica",
+        "institution": "Universidad Tecnológica de la Mixteca",
+        "status": "En curso",
+        "courses": ["Microcontroladores Avanzados", "Procesamiento de Señales", "Redes de Computadoras", "Máquinas Eléctricas"]
+    },
+    "github": "https://github.com/Sudo-Guts",
+    "github_label": "github.com/Sudo-Guts",
+    "projects": [
+        {
+            "name": "Procesador RISC-V RV32I",
+            "area": "Verilog / FPGA / Arquitectura de computadoras",
+            "url": "https://github.com/Sudo-Guts/RV32I-Monocilo",
+            "repository": "RV32I-Monocilo",
+            "points": [
+                "Diseño RTL en Verilog: ALU, banco de registros, control, memorias e interconexión Wishbone.",
+                "Flujo bare-metal en C, carga de programas y depuración por UART; ejecución de programas validada en hardware."
+            ]
+        },
+        {
+            "name": "VoxID · Identificación de hablante",
+            "area": "C / STM32F407 / Procesamiento de señales",
+            "url": "https://github.com/Sudo-Guts/VoxID",
+            "repository": "VoxID",
+            "points": [
+                "Firmware con adquisición ADC, TIM2 y DMA, extracción MFCC e interfaz de registro e identificación de locutores.",
+                "Perfiles en EEPROM y trabajo de acondicionamiento analógico en KiCad. Proyecto en desarrollo y calibración."
+            ]
+        },
+        {
+            "name": "GutsNet · Laboratorio de servicios",
+            "area": "Ubuntu / Apache / Redes / Sockets en C",
+            "url": "https://github.com/Sudo-Guts/GutsNet",
+            "repository": "GutsNet",
+            "points": [
+                "Servidor con HTTPS, FTPS y SSH/SFTP restringido que comparten una biblioteca multimedia con permisos y aislamiento.",
+                "Pruebas cruzadas desde otros dispositivos y desarrollo de clientes y servidores Echo y Daytime por TCP y UDP."
+            ]
+        },
+        {
+            "name": "Dotfiles · Entorno de desarrollo",
+            "area": "Linux / Zsh / Neovim / Automatización",
+            "url": "https://github.com/Sudo-Guts/Dotfiles",
+            "repository": "Dotfiles",
+            "points": [
+                "Configuración de un entorno Linux con Zsh, Kitty y Neovim para trabajar con C/C++, Python y HDL.",
+                "Instalación modular, diagnóstico y documentación de herramientas; flujos de trabajo desde la terminal."
+            ]
+        }
+    ],
+    "skills": [
+        {"name": "Diseño digital", "text": "Verilog, FPGA, arquitectura RV32I e interconexión Wishbone."},
+        {"name": "Sistemas embebidos", "text": "C, STM32F407, AVR, ADC, DMA, UART e I2C."},
+        {"name": "Herramientas", "text": "Git, GNU Make, Linux, Zsh, Neovim, KiCad y MATLAB/Octave."}
+    ],
+    "additional": {
+        "name": "Inversor trifásico SPWM",
+        "text": "Trabajo en firmware base para ATmega328P, esquemático y simulación de una etapa de potencia. En desarrollo.",
+        "url": "https://github.com/Sudo-Guts/SPWM"
+    },
+    "method": "Pruebas en PC y hardware, documentación técnica y control de versiones. Los repositorios muestran el alcance y los pendientes de cada proyecto.",
+    "revision": "Octubre de 2026"
+}
