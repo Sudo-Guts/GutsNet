@@ -98,9 +98,17 @@ check_get "/materias.html" '^text/html' "materias.html"
 check_deployed_copy "materias.html" "materias.html"
 check_versioned_asset "assets/css/style.css" '^text/css' "style.css"
 check_versioned_asset "assets/js/main.js" '^(application|text)/javascript' "main.js"
+check_get "/cv.html" '^text/html' "cv.html"
+check_deployed_copy "cv.html" "cv.html"
+check_get "/assets/css/cv.css" '^text/css' "cv.css"
+check_deployed_copy "assets/css/cv.css" "cv.css"
+check_get "/assets/img/gustavo-ruiz-luis.jpg" '^image/jpeg' "portrait.jpg"
+check_deployed_copy "assets/img/gustavo-ruiz-luis.jpg" "portrait.jpg"
+check_get "/assets/docs/Gustavo_Ruiz_Luis_CV.pdf" '^application/pdf' "cv.pdf"
+check_deployed_copy "assets/docs/Gustavo_Ruiz_Luis_CV.pdf" "cv.pdf"
 
 if [[ "${GUTSNET_ASSETS_ONLY:-0}" == "1" ]]; then
-    printf '\nLa version de HTML, CSS y JavaScript publicada es correcta.\n'
+    printf '\nLa version de HTML, CSS, JavaScript, fotografia y CV publicada es correcta.\n'
     exit 0
 fi
 
