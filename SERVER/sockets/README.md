@@ -1,5 +1,28 @@
 # GutsNet: clientes externos y servicios Echo y Daytime
 
+## Ayuda para consultar una IP y un puerto
+
+Desde la raíz del repositorio:
+
+```bash
+make help
+make help-sockets
+```
+
+`make help` muestra la sintaxis de los cuatro clientes. `make help-sockets`
+muestra además ejemplos de Echo y Daytime por TCP y UDP, y cómo cambiar
+el destino, el mensaje y el límite de espera de las consultas TCP con Make.
+Esta ayuda también está disponible con `make -C C0DE/sockets help`.
+Los comandos `out/...` de la ayuda detallada se ejecutan desde `C0DE/sockets`;
+desde la raíz, usa el prefijo `C0DE/sockets/out/`.
+
+Echo recibe un mensaje entre comillas y verifica que el servidor devuelva
+los mismos bytes. Daytime muestra la fecha y hora enviada por el servidor.
+La IP `192.0.2.10` de los ejemplos debe sustituirse por la IP o el nombre DNS
+del servidor que quieres consultar. El servicio debe estar disponible en el
+puerto y transporte elegidos; los servidores de GutsNet usan Echo 7 y Daytime 13
+de manera predeterminada.
+
 ## Consultar servidores externos
 
 Los clientes C aceptan una IP o un nombre DNS y el puerto del otro servidor.
