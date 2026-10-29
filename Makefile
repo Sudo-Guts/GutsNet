@@ -25,7 +25,7 @@ RSYNC_FLAGS := -rpt --delete --delete-excluded --no-links \
                --exclude=*.p12 \
                --exclude=*.pfx
 
-.PHONY: help check preview deploy test test-web install-cinema check-cinema test-cinema install-ssh check-ssh test-ssh install-ftp check-ftp check-shared install-sockets check-sockets test-sockets status
+.PHONY: help help-sockets check preview deploy test test-web install-cinema check-cinema test-cinema install-ssh check-ssh test-ssh install-ftp check-ftp check-shared install-sockets check-sockets test-sockets status
 
 # ============================================================
 # Help
@@ -39,6 +39,7 @@ help:
 	@echo "  make check-ftp       Comprobar el servidor FTPS"
 	@echo "  make check-ssh       Comprobar SSH Jail"
 	@echo "  make check-sockets   Comprobar los puertos Echo y Daytime"
+	@echo "  make help-sockets    Ver ejemplos de consultas Echo/Daytime TCP y UDP"
 	@echo "  make check-cinema    Comprobar Cinema y HTTPS"
 	@echo "  make check-shared    Comprobar la biblioteca unificada tras migrarla"
 	@echo ""
@@ -49,6 +50,15 @@ help:
 	@echo "  make test-ssh        Probar la consola en chroot temporal"
 	@echo "  make test-sockets    Compilar y probar clientes de sockets"
 	@echo ""
+	@echo "  SOCKETS: CONSULTAR IP O NOMBRE DNS Y PUERTO"
+	@echo "  Compila primero: make -C C0DE/sockets"
+	@echo '  C0DE/sockets/out/echo_tcp_client <IP_o_host> <puerto> "<mensaje>"'
+	@echo '  C0DE/sockets/out/echo_udp_client <IP_o_host> <puerto> "<mensaje>"'
+	@echo '  C0DE/sockets/out/daytime_tcp_client <IP_o_host> <puerto>'
+	@echo '  C0DE/sockets/out/daytime_udp_client <IP_o_host> <puerto>'
+	@echo "  Sustituye los argumentos entre < > por tus valores."
+	@echo "  Servidores GutsNet: Echo 7 y Daytime 13; el transporte debe coincidir."
+	@echo ""
 	@echo "  INSTALACION / CAMBIOS EN EL SISTEMA"
 	@echo "  make deploy          Publicar la web con rsync --delete"
 	@echo "  make install-cinema  Instalar/actualizar Cinema"
@@ -57,6 +67,9 @@ help:
 	@echo "  make install-sockets Instalar/actualizar servicios Echo/Daytime"
 	@echo ""
 	@echo "  Guia inicial: README.md | Arquitectura: DOC/Arquitectura.md"
+
+help-sockets:
+	@$(MAKE) --no-print-directory -C "$(ROOT)/C0DE/sockets" help
 
 # ============================================================
 # Validation

@@ -22,13 +22,41 @@ export ECHO_HOST ECHO_PORT MESSAGE DAYTIME_HOST DAYTIME_PORT SOCKET_TIMEOUT
 all: echo-tcp echo-udp daytime
 
 help:
-	@echo "make echo-tcp  - Compilar cliente y servidor Echo TCP"
-	@echo "make echo-udp  - Compilar cliente y servidor Echo UDP"
-	@echo "make daytime   - Compilar clientes y servidores Daytime TCP/UDP"
-	@echo "make echo-remoto - Consultar Echo TCP externo (tcpbin.com:4242)"
-	@echo "make hora-remota - Consultar Daytime TCP externo (time.nist.gov:13)"
-	@echo "make test       - Probar clientes con servidores temporales, sin Internet"
-	@echo "make clean     - Eliminar ejecutables generados"
+	@echo "GutsNet - comandos desde C0DE/sockets (cd C0DE/sockets desde la raiz)"
+	@echo ""
+	@echo "  COMPILAR Y PROBAR"
+	@echo "  make all         Compilar los ocho clientes y servidores"
+	@echo "  make echo-tcp    Compilar cliente y servidor Echo TCP"
+	@echo "  make echo-udp    Compilar cliente y servidor Echo UDP"
+	@echo "  make daytime     Compilar clientes y servidores Daytime TCP/UDP"
+	@echo "  make daytime-tcp Compilar cliente y servidor Daytime TCP"
+	@echo "  make daytime-udp Compilar cliente y servidor Daytime UDP"
+	@echo "  make test        Probar clientes con servidores temporales, sin Internet"
+	@echo "  make clean       Eliminar ejecutables generados"
+	@echo ""
+	@echo "  CONSULTAR IP O NOMBRE DNS Y PUERTO"
+	@echo "  Compila primero: make all"
+	@echo '  out/echo_tcp_client <IP_o_host> <puerto> "<mensaje>"'
+	@echo '  out/echo_udp_client <IP_o_host> <puerto> "<mensaje>"'
+	@echo '  out/daytime_tcp_client <IP_o_host> <puerto>'
+	@echo '  out/daytime_udp_client <IP_o_host> <puerto>'
+	@echo "  Sustituye los argumentos entre < > por tus valores."
+	@echo "  Echo devuelve tu mensaje; Daytime muestra la fecha y hora del servidor."
+	@echo "  El destino debe ofrecer el servicio en el puerto y transporte elegidos."
+	@echo ""
+	@echo "  EJEMPLOS TCP Y UDP (192.0.2.10 es una IP de ejemplo; sustituyela)"
+	@echo '  out/echo_tcp_client 192.0.2.10 7 "Hola TCP"'
+	@echo '  out/echo_udp_client 192.0.2.10 7 "Hola UDP"'
+	@echo "  out/daytime_tcp_client 192.0.2.10 13"
+	@echo "  out/daytime_udp_client 192.0.2.10 13"
+	@echo ""
+	@echo "  CONSULTAS TCP CON MAKE (compilan el cliente y realizan la consulta)"
+	@echo '  make echo-remoto ECHO_HOST=192.0.2.10 ECHO_PORT=7 MESSAGE="Hola TCP"'
+	@echo "  make hora-remota DAYTIME_HOST=192.0.2.10 DAYTIME_PORT=13"
+	@echo "  Sin variables: Echo usa tcpbin.com:4242 y Daytime usa time.nist.gov:13."
+	@echo "  Agrega SOCKET_TIMEOUT=20s para cambiar el limite de espera de 10s."
+	@echo "  Puertos predeterminados de los servidores GutsNet: Echo 7 y Daytime 13."
+	@echo "  Guia: SERVER/sockets/README.md desde la raiz del repositorio."
 
 echo-tcp: $(OUT)/echo_tcp_server $(OUT)/echo_tcp_client
 
