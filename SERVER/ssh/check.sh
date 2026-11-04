@@ -37,10 +37,25 @@ if runuser -u "$user" -- /bin/bash -p -c 'builtin test "$@"' -- -w "$jail"; then
 if readelf -l "$jail$binary" | grep -q INTERP; then fail 'Shell no estatica'; fi
 ok 'Cuenta restringida, shell estatica, chroot y bind mount'
 ok 'Escritura permitida en /compartido y raiz de la jaula protegida'
+[[ -x "$jail/usr/bin/ssh" && ! -L "$jail/usr/bin/ssh" ]] || fail 'Falta cliente SSH saliente'
+for path in /usr /usr/bin /usr/bin/ssh /etc /etc/gutsnet /etc/gutsnet/ssh_config /etc/passwd /etc/group /etc/nsswitch.conf /etc/hosts /etc/resolv.conf /var /var/lib; do
+    [[ ! -L "$jail$path" && "$(stat -c '%U:%G' "$jail$path")" == root:root ]] || fail "Ruta de cliente insegura: $path"
+    mode="$(stat -c '%a' "$jail$path")"
+    (( (8#$mode & 0022) == 0 )) || fail "Ruta de cliente escribible: $path"
+done
+[[ "$(stat -c '%u:%g:%a' "$jail/var/lib/gutsnet-ssh")" == "$(id -u "$user"):$(id -g "$user"):700" ]] || fail 'Directorio de claves incorrecto'
+[[ ! -L "$jail/var/lib/gutsnet-ssh/known_hosts" && "$(stat -c '%u:%g:%a:%h' "$jail/var/lib/gutsnet-ssh/known_hosts")" == "$(id -u "$user"):$(id -g "$user"):600:1" ]] || fail 'known_hosts incorrecto'
+client_opts="$(chroot --userspec="$(id -u "$user"):$(id -g "$user")" "$jail" /usr/bin/ssh -G -F /etc/gutsnet/ssh_config -T -l "$user" localhost)" || fail 'Cliente SSH no ejecutable dentro del chroot'
+for option in 'escapechar none' 'enableescapecommandline no' 'permitlocalcommand no' 'clearallforwardings yes' 'forwardagent no' 'forwardx11 no' 'identityagent none' 'stricthostkeychecking ask' 'globalknownhostsfile /dev/null' 'userknownhostsfile /var/lib/gutsnet-ssh/known_hosts'; do
+    grep -Fqx "$option" <<< "$client_opts" || fail "Opcion saliente incorrecta: $option"
+done
+grep -Eq '^pubkeyauthentication (no|false)$' <<< "$client_opts" || fail 'Autenticacion por llaves habilitada en el cliente'
+if grep -Eq '^(proxycommand|proxyjump|controlpath) ' <<< "$client_opts"; then fail 'Proxy o multiplexacion habilitados'; fi
+ok 'Cliente SSH saliente listo y claves conocidas privadas'
 opts="$(/usr/sbin/sshd -T -C user="$user",host=localhost,addr=127.0.0.1)"
 grep -qx 'chrootdirectory /home/gutsnet-jail' <<< "$opts" || fail 'ChrootDirectory incorrecto'
 grep -qx 'disableforwarding yes' <<< "$opts" || fail 'Forwarding permitido'
 admin="$(/usr/sbin/sshd -T -C user=guts,host=localhost,addr=127.0.0.1)"
 grep -qx 'chrootdirectory none' <<< "$admin" || fail 'Admin afectado por chroot'
 ok 'Match SSH solo en gutsjail, no en guts'
-echo 'Pendiente: conexiones remotas y pruebas reales con SSH/SFTP.'
+echo 'Pendiente: conexiones remotas, SSH/SFTP y salto con ssh usuario@otro-servidor.'

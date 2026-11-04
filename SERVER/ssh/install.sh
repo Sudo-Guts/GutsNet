@@ -16,8 +16,11 @@ log() { echo "[GutsNet SSH] $*"; }
 
 preflight() {
     [[ "$EUID" == 0 ]] || die "Usa sudo."
-    [[ -f "$HERE/src/gutsnet_shell.c" && -f "$HERE/sshd-match.conf" ]] || die "Archivos SSH incompletos."
+    [[ -f "$HERE/src/gutsnet_shell.c" && -f "$HERE/sshd-match.conf" && -f "$HERE/client-runtime.sh" && -f "$HERE/ssh-client.conf" ]] || die "Archivos SSH incompletos."
     [[ -x /usr/sbin/sshd && -f "$SSHD" ]] || die "OpenSSH Server no instalado."
+    [[ -x /usr/bin/ssh ]] || die "Falta openssh-client. Instala con sudo apt-get install openssh-client."
+    command -v ldd >/dev/null || die "Falta ldd (libc-bin)."
+    /usr/bin/ssh -G -F "$HERE/ssh-client.conf" -T -l "$USER_NAME" localhost >/dev/null || die "Configuracion del cliente SSH invalida."
     command -v cc >/dev/null || die "Falta GCC."
     command -v readelf >/dev/null || die "Falta binutils."
     command -v setfacl >/dev/null || die "Falta acl. Instala con sudo apt-get install acl."
@@ -130,6 +133,9 @@ install_jail() {
     else
         usermod -a -G "$GROUP" "$USER_NAME"
     fi
+    # Configuracion root:root y claves conocidas fuera de la biblioteca multimedia.
+    source "$HERE/client-runtime.sh"
+    install_ssh_client "$JAIL" "$USER_NAME" "$HERE" || die "No se pudo instalar/validar el cliente SSH dentro del jail."
     # Bash respeta ACL y grupos suplementarios, a diferencia de test en uutils 0.10.
     if ! runuser -u "$USER_NAME" -- /bin/bash -p -c 'builtin test "$@"' -- -w "$JAIL/compartido" \
         || ! runuser -u "$USER_NAME" -- /bin/bash -p -c 'builtin test "$@"' -- -x "$JAIL/compartido"; then

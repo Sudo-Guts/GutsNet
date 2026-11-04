@@ -165,6 +165,14 @@ class ShellTests(unittest.TestCase):
         self.assertEqual(result.stdout.count("prueba.txt"), 3)
         self.assertEqual(result.stderr, "")
 
+    def test_ssh_rejects_arbitrary_options_and_remote_commands(self):
+        for command in ("ssh", "ssh host", "ssh -p 0 user@host", "ssh -p 65536 user@host",
+            "ssh -oProxyCommand=id user@host", "ssh user@host id", "ssh -F /compartido/config user@host",
+            "ssh -L 8080:host:80 user@host", "ssh user@host -oProxyCommand=id"):
+            with self.subTest(command=command):
+                self.denied(command)
+        self.assertIn("requiere una terminal", self.denied("ssh user@host").stderr)
+
     def test_names_from_cinema_support_spaces_and_accents(self):
         name = "Mi canción.mp3"
         (self.shared / name).write_text("Contenido transferido por web o SFTP\n")
