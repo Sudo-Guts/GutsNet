@@ -122,6 +122,10 @@ install_jail() {
         if [[ ! -e "$JAIL/dev/$name" ]]; then
             mknod -m 666 "$JAIL/dev/$name" c "$major" "$minor"
         fi
+        [[ -c "$JAIL/dev/$name" && "$(stat -c '%t:%T' "$JAIL/dev/$name")" == "$(printf '%x:%x' "$major" "$minor")" ]] || die "Dispositivo invalido: $name"
+        # Aplicar permisos tambien al reinstalar y con umask 077/uutils.
+        chown root:root "$JAIL/dev/$name"
+        chmod 666 "$JAIL/dev/$name"
     done
 
     install -o root -g root -m 755 "$binary" "$SHELL_PATH"

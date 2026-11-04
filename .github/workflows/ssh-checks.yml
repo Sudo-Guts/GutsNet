@@ -96,9 +96,13 @@ jobs:
           }
           sftp_batch "$RUNNER_TEMP/gutsnet-sftp.batch"
           cmp "$RUNNER_TEMP/gutsnet-upload.txt" "$RUNNER_TEMP/gutsnet-download.txt"
-          printf 'get /etc/passwd %s/gutsnet-forbidden.txt\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/gutsnet-sftp-denied.batch"
+          # El cliente necesita una identidad minima en la jaula, no el passwd del host.
+          printf 'get /etc/passwd %s/gutsnet-jail-passwd.txt\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/gutsnet-sftp-identity.batch"
+          sftp_batch "$RUNNER_TEMP/gutsnet-sftp-identity.batch"
+          test "$(cut -d: -f1 "$RUNNER_TEMP/gutsnet-jail-passwd.txt")" = gutsjail
+          printf 'get /etc/shadow %s/gutsnet-forbidden.txt\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/gutsnet-sftp-denied.batch"
           if sftp_batch "$RUNNER_TEMP/gutsnet-sftp-denied.batch"; then
-            echo 'ERROR: SFTP accedio al passwd del host'
+            echo 'ERROR: SFTP accedio a contrasenas del sistema'
             exit 1
           fi
           test ! -e "$RUNNER_TEMP/gutsnet-forbidden.txt"

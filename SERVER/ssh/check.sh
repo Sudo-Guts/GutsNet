@@ -38,6 +38,9 @@ if readelf -l "$jail$binary" | grep -q INTERP; then fail 'Shell no estatica'; fi
 ok 'Cuenta restringida, shell estatica, chroot y bind mount'
 ok 'Escritura permitida en /compartido y raiz de la jaula protegida'
 [[ -x "$jail/usr/bin/ssh" && ! -L "$jail/usr/bin/ssh" ]] || fail 'Falta cliente SSH saliente'
+for device in null zero tty urandom; do
+    [[ -c "$jail/dev/$device" && ! -L "$jail/dev/$device" && "$(stat -c '%U:%G:%a' "$jail/dev/$device")" == root:root:666 ]] || fail "Dispositivo SSH incorrecto: $device"
+done
 for path in /usr /usr/bin /usr/bin/ssh /etc /etc/gutsnet /etc/gutsnet/ssh_config /etc/passwd /etc/group /etc/nsswitch.conf /etc/hosts /etc/resolv.conf /var /var/lib; do
     [[ ! -L "$jail$path" && "$(stat -c '%U:%G' "$jail$path")" == root:root ]] || fail "Ruta de cliente insegura: $path"
     mode="$(stat -c '%a' "$jail$path")"

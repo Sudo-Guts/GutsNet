@@ -174,7 +174,10 @@ bye
 
 SFTP usa `internal-sftp` dentro del mismo chroot. La raíz que pueda mostrar
 el cliente corresponde a la jaula, no a la raíz del servidor; solo el área
-compartida tiene permisos de escritura para esta cuenta.
+compartida y el directorio privado de claves conocidas tienen permisos de
+escritura para esta cuenta. Los archivos de identidad y DNS visibles dentro
+de la jaula son copias mínimas para el cliente SSH: `passwd` solo contiene
+la cuenta gutsjail, sin contraseñas ni otras cuentas del servidor.
 SFTP y FTP(S) son servicios distintos.
 
 ## Comprobaciones
