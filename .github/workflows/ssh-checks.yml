@@ -29,7 +29,9 @@ jobs:
         run: |
           bash -n SERVER/ssh/install.sh
           bash -n SERVER/ssh/check.sh
+          bash -n SERVER/ssh/client-runtime.sh
           python3 -m py_compile SERVER/ssh/tests/test_shell.py
+          python3 -m py_compile SERVER/ssh/tests/test_ssh_hop.py
       - name: Compilar y probar shell estatica
         run: |
           make -C SERVER/ssh test
@@ -39,7 +41,7 @@ jobs:
       - name: Instalar y comprobar OpenSSH
         run: |
           sudo apt-get -qq update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server sshpass acl
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server openssh-client sshpass acl python3-pexpect
           sudo systemctl start ssh
           # Reproducir ACL heredadas con group::r-x y mascara rwx.
           sudo install -d -o root -g root -m 755 /home/gutsnet-shared
@@ -94,9 +96,13 @@ jobs:
           }
           sftp_batch "$RUNNER_TEMP/gutsnet-sftp.batch"
           cmp "$RUNNER_TEMP/gutsnet-upload.txt" "$RUNNER_TEMP/gutsnet-download.txt"
-          printf 'get /etc/passwd %s/gutsnet-forbidden.txt\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/gutsnet-sftp-denied.batch"
+          # El cliente necesita una identidad minima en la jaula, no el passwd del host.
+          printf 'get /etc/passwd %s/gutsnet-jail-passwd.txt\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/gutsnet-sftp-identity.batch"
+          sftp_batch "$RUNNER_TEMP/gutsnet-sftp-identity.batch"
+          test "$(cut -d: -f1 "$RUNNER_TEMP/gutsnet-jail-passwd.txt")" = gutsjail
+          printf 'get /etc/shadow %s/gutsnet-forbidden.txt\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/gutsnet-sftp-denied.batch"
           if sftp_batch "$RUNNER_TEMP/gutsnet-sftp-denied.batch"; then
-            echo 'ERROR: SFTP accedio al passwd del host'
+            echo 'ERROR: SFTP accedio a contrasenas del sistema'
             exit 1
           fi
           test ! -e "$RUNNER_TEMP/gutsnet-forbidden.txt"
@@ -106,11 +112,16 @@ jobs:
             exit 1
           fi
 
+          # Conectar a otro servidor desde el jail y volver al directorio original.
+          printf '%s\n' "$jail_password" | sudo /usr/bin/python3 SERVER/ssh/tests/test_ssh_hop.py --known-hosts "$known_hosts"
+
           # Reinstalar conserva documentos y la clave de la cuenta.
           remote 'write conservar_ci.txt Conservar al reinstalar'
           auth_before="$(sudo getent shadow gutsjail | cut -d: -f2)"
+          known_before="$(sudo sha256sum /home/gutsnet-jail/var/lib/gutsnet-ssh/known_hosts)"
           sudo bash SERVER/ssh/install.sh --install
           test "$auth_before" = "$(sudo getent shadow gutsjail | cut -d: -f2)"
+          test "$known_before" = "$(sudo sha256sum /home/gutsnet-jail/var/lib/gutsnet-ssh/known_hosts)"
           test "$(remote 'cat conservar_ci.txt')" = 'Conservar al reinstalar'
           remote 'rm conservar_ci.txt'
           sudo bash SERVER/ssh/check.sh

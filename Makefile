@@ -50,6 +50,11 @@ help:
 	@echo "  make test-ssh        Probar la consola en chroot temporal"
 	@echo "  make test-sockets    Compilar y probar clientes de sockets"
 	@echo ""
+	@echo "  SSH DESDE LA CONSOLA DE GUTSJAIL"
+	@echo '  ssh <usuario>@<IP_o_host>'
+	@echo '  ssh -p <puerto> <usuario>@<IP_o_host>'
+	@echo "  exit en el destino vuelve a gutsjail y conserva tu carpeta."
+	@echo ""
 	@echo "  SOCKETS: CONSULTAR IP O NOMBRE DNS Y PUERTO"
 	@echo "  Compila primero: make -C C0DE/sockets"
 	@echo '  C0DE/sockets/out/echo_tcp_client <IP_o_host> <puerto> "<mensaje>"'

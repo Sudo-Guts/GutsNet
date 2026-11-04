@@ -220,7 +220,10 @@ def main():
             print("OK: carga FTPS, reproduccion web, descarga SFTP y baja web.")
 
             ssh("cat /etc/passwd", success=False)
-            sftp("get /etc/passwd " + sftp_quote(temp / "prohibido"), success=False)
+            identity = temp / "jail-passwd"
+            sftp("get /etc/passwd " + sftp_quote(identity))
+            assert [line.split(":")[0] for line in identity.read_text().splitlines()] == ["gutsjail"], "SFTP expone cuentas ajenas a la jaula"
+            sftp("get /etc/shadow " + sftp_quote(temp / "prohibido"), success=False)
             try:
                 ftp.retrbinary("RETR /../../etc/passwd", lambda block: None)
                 raise AssertionError("FTPS accedio fuera del chroot")

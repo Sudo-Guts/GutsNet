@@ -20,7 +20,7 @@ make check-ssh
 conservar, omite ese comando. La reinstalación conserva la contraseña existente
 y los documentos compartidos.
 
-El servidor necesita OpenSSH activo, GCC con soporte de enlace estático,
+El servidor necesita OpenSSH activo, `openssh-client`, GCC con soporte de enlace estático,
 binutils y util-linux. El instalador revisa los requisitos antes de modificar
 SSH. Prepara el grupo `gutsnet-files` y el área de intercambio si faltan; no es
 necesario configurar FTPS primero.
@@ -69,21 +69,67 @@ exit
 | `rm archivo.txt` | Elimina un archivo o el enlace indicado, sin seguirlo. |
 | `rmdir carpeta` | Elimina una carpeta vacía. |
 | `rm -r carpeta` | Elimina una carpeta y su contenido, sin seguir enlaces. |
+| `ssh usuario@host` | Abre una sesión SSH en otro servidor, en el puerto 22. |
+| `ssh -p puerto usuario@host` | Abre una sesión SSH en otro puerto TCP. |
 | `exit` | Cierra la sesión. |
 
 Se admiten rutas relativas y rutas que comiencen con `/compartido/`.
 Los nombres admiten UTF-8, acentos y espacios. Usa comillas cuando el nombre
 contenga espacios o signos que la consola reserva: `rm "Mi canción.mp3"`.
-También admite comillas simples y escapes; nunca expande variables ni ejecuta
-programas. Rechaza nombres ocultos, controles y UTF-8 inválido. El texto de
+También admite comillas simples y escapes; nunca expande variables. Rechaza nombres ocultos, controles y UTF-8 inválido. El texto de
 `write` se guarda literalmente, incluidos sus espacios y acentos.
 
 En la raíz compartida, `cd ..` se rechaza. Desde una subcarpeta, `cd ..`
 solo permite volver hacia /compartido. Se rechazan rutas que salgan del área,
 por ejemplo `cat /etc/passwd`, `cd /` o `touch ../../fuera.txt`.
 La consola no ejecuta `bash`, `sh`, `sudo`, programas subidos ni comandos
-arbitrarios. Los errores devuelven un estado distinto de cero también al usar
+arbitrarios. SSH saliente es la única excepción explícita. Los errores devuelven un estado distinto de cero también al usar
 `ssh gutsjail@servidor 'comando'`.
+
+## Saltar de servidor en servidor
+
+Desde tu computadora entra a GutsNet:
+
+```bash
+ssh gutsjail@192.168.244.135
+```
+
+Dentro de `gutsnet-jail`, indica la cuenta y la dirección del siguiente servidor:
+
+```text
+ssh alumno@192.168.244.140
+```
+
+La dirección anterior es un ejemplo: usa la IP o el nombre DNS real del destino.
+Si utiliza otro puerto:
+
+```text
+ssh -p 2222 alumno@192.168.244.140
+```
+
+El cliente pide confirmar la huella del servidor en la primera conexión y luego
+la contraseña de la cuenta del destino. También admite IPv6 sin corchetes,
+por ejemplo `ssh alumno@2001:db8::10`. Requiere una terminal interactiva;
+si invocas el salto como comando remoto, asigna una con `ssh -t`.
+
+Al escribir `exit` en el destino vuelves a la consola y carpeta originales de
+GutsNet. Otro `exit` cierra la sesión en GutsNet. Para continuar a un tercer
+servidor, la cuenta del segundo debe permitir su propio comando `ssh`.
+
+Solo se aceptan `usuario@host` y `-p` antes del destino, con un puerto de 1 a
+65535. La conexión usa contraseña, sin comandos remotos adicionales, opciones
+`-o`, archivos `-F`, túneles, agentes ni comandos locales de escape. El cliente
+usa `/etc/gutsnet/ssh_config` dentro de la jaula, propiedad de root, e ignora
+las configuraciones que el usuario suba por SFTP. Consulta las opciones en
+[ssh(1)](https://man.openbsd.org/ssh) y [ssh_config(5)](https://man.openbsd.org/ssh_config).
+
+El instalador copia `/usr/bin/ssh`, sus librerías y los archivos mínimos de
+identidad y resolución DNS. Las claves aceptadas se conservan en
+`/var/lib/gutsnet-ssh/known_hosts` dentro de la jaula, con directorio 700 y
+archivo 600, fuera de Cinema. No se copian contraseñas del sistema ni shells.
+Vuelve a ejecutar `make install-ssh` después de actualizar `openssh-client`
+o sus librerías para renovar esas copias. La reinstalación conserva documentos,
+contraseña de la cuenta y claves de servidores aceptadas.
 
 ## Área compartida y permisos
 
@@ -91,6 +137,9 @@ arbitrarios. Los errores devuelven un estado distinto de cero también al usar
 | --- | --- |
 | `/home/gutsnet-jail` | Raíz del chroot, root:root, 755. |
 | `/home/gutsnet-jail/usr/local/bin/gutsnet-shell` | Consola estática propiedad de root. |
+| `/home/gutsnet-jail/usr/bin/ssh` | Cliente SSH saliente propiedad de root. |
+| `/home/gutsnet-jail/etc/gutsnet/ssh_config` | Opciones permitidas del cliente, propiedad de root. |
+| `/home/gutsnet-jail/var/lib/gutsnet-ssh/known_hosts` | Claves aceptadas por gutsjail, privadas y persistentes. |
 | `/home/gutsnet-shared/peliculas` | Almacenamiento canónico de Cinema/SSH/FTPS después de la migración, root:gutsnet-files, 2770. |
 | `/home/gutsnet-jail/compartido` | Montaje bind de la biblioteca de Cinema. |
 
@@ -125,7 +174,10 @@ bye
 
 SFTP usa `internal-sftp` dentro del mismo chroot. La raíz que pueda mostrar
 el cliente corresponde a la jaula, no a la raíz del servidor; solo el área
-compartida tiene permisos de escritura para esta cuenta.
+compartida y el directorio privado de claves conocidas tienen permisos de
+escritura para esta cuenta. Los archivos de identidad y DNS visibles dentro
+de la jaula son copias mínimas para el cliente SSH: `passwd` solo contiene
+la cuenta gutsjail, sin contraseñas ni otras cuentas del servidor.
 SFTP y FTP(S) son servicios distintos.
 
 ## Comprobaciones
@@ -137,14 +189,16 @@ make test-ssh
 
 La primera revisión comprueba la cuenta, el montaje, la escritura en el área,
 la protección de la raíz y las opciones efectivas de OpenSSH.
-La segunda crea una jaula temporal y ejecuta 16 pruebas con un UID sin
+La segunda crea una jaula temporal y ejecuta 17 pruebas con un UID sin
 privilegios: altas, bajas, navegación, grupo compartido, enlaces, rutas de
 escape, comandos prohibidos y entradas largas. Solo utiliza sus propios
 archivos temporales.
 
 GitHub Actions también instala el módulo y comprueba conexiones reales por
-SSH/SFTP en loopback, rechazos de escape y reinstalación con conservación de
-documentos y contraseña.
+SSH/SFTP en loopback, saltos SSH interactivos con puerto 22 y alternativo,
+resolución de `localhost`, rechazo de configuraciones del usuario y regreso a
+la carpeta original. Comprueba rechazos de escape y reinstalación con
+conservación de documentos, contraseña y claves conocidas.
 
 El instalador respalda `/etc/ssh/sshd_config` y `/etc/fstab`, valida
 `sshd -t` y las opciones para `gutsjail` y `guts`, y recarga SSH después

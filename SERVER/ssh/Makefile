@@ -1,4 +1,4 @@
-# GutsNet - programa estatico para un chroot sin ejecutables del sistema.
+# GutsNet - consola estatica; el unico cliente externo permitido es SSH.
 CC       ?= cc
 CFLAGS   ?= -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror
 TARGET   := out/gutsnet-shell

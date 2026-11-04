@@ -6,18 +6,22 @@
  * -----------------------------------------------------------------------------
  *
  *  Consola de archivos para OpenSSH ChrootDirectory. Resuelve rutas desde
- *  /compartido mediante descriptores y O_NOFOLLOW, sin ejecutar otros programas.
+ *  /compartido mediante descriptores y O_NOFOLLOW. Permite sesiones SSH salientes
+ *  con argumentos limitados y un cliente/configuracion propiedad de root.
  *
  * =============================================================================
  */
 #define _POSIX_C_SOURCE 200809L
+#include <arpa/inet.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define LINE_MAX_BYTES 4096U
@@ -26,6 +30,9 @@
 #define MAX_CAT_BYTES (1024U * 1024U)
 #define MAX_REMOVE_DEPTH 64U
 #define SHARED_PATH "/compartido"
+#define SSH_CLIENT_PATH "/usr/bin/ssh"
+#define SSH_CONFIG_PATH "/etc/gutsnet/ssh_config"
+#define SSH_HOME_PATH "/var/lib/gutsnet-ssh"
 
 static int shared_fd = -1;
 static char current[PATH_MAX_BYTES] = "";
@@ -69,7 +76,9 @@ static void show_help(void)
 {
     puts("Comandos: help, pwd, ls [ruta], cd [ruta], touch <archivo>,");
     puts("write <archivo> <texto>, cat <archivo>, mkdir <carpeta>,");
-    puts("rm <archivo>, rmdir <carpeta-vacia>, rm -r <carpeta>, exit");
+    puts("rm <archivo>, rmdir <carpeta-vacia>, rm -r <carpeta>,");
+    puts("ssh [-p <puerto>] <usuario>@<IP_o_host>, exit");
+    puts("SSH abre otro servidor; exit en el destino vuelve a esta consola.");
     puts("write crea un documento nuevo; el texto se guarda literalmente.");
     puts("Usa comillas para nombres con espacios: rm \"Mi cancion.mp3\".");
     puts("Acepta nombres UTF-8; las comillas no ejecutan variables ni programas.");
@@ -307,6 +316,102 @@ static char *next_word(char **cursor, int *invalid) {
     return word;
 }
 
+/**
+ * @brief Valida usuario y destino sin aceptar opciones, URI ni comandos.
+ * @param destination Destino usuario@host; acepta DNS, IPv4 e IPv6 sin corchetes.
+ * @return 1 si el destino es valido; 0 si requiere sintaxis no admitida.
+ */
+static int valid_ssh_destination(const char *destination) {
+    const char *at = strchr(destination, '@');
+    if (!at || at == destination || at - destination > 64) return 0;
+    const char *user_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-";
+    if (destination[0] == '-' || destination[0] == '.' || strspn(destination, user_chars) != (size_t)(at - destination)) return 0;
+    const char *host = at + 1;
+    size_t length = strlen(host);
+    if (!length || length > 253) return 0;
+    if (strchr(host, ':')) {
+        struct in6_addr address;
+        return inet_pton(AF_INET6, host, &address) == 1;
+    }
+    size_t label = 0;
+    for (size_t i = 0; i < length; ++i) {
+        unsigned char value = (unsigned char)host[i];
+        if (value == '.') {
+            if (!label || host[i - 1] == '-') return 0;
+            label = 0;
+        } else {
+            if (!((value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z') || (value >= '0' && value <= '9') || value == '-')) return 0;
+            if ((!label && value == '-') || ++label > 63) return 0;
+        }
+    }
+    return host[length - 1] != '-';
+}
+
+/**
+ * @brief Comprueba un puerto TCP decimal entre 1 y 65535.
+ * @param port Texto del puerto, sin signos ni espacios.
+ * @return 1 si el puerto es valido; 0 en otro caso.
+ */
+static int valid_ssh_port(const char *port) {
+    size_t length = strlen(port);
+    if (!length || length > 5 || strspn(port, "0123456789") != length) return 0;
+    unsigned long value = strtoul(port, NULL, 10);
+    return value > 0 && value <= 65535;
+}
+
+/**
+ * @brief Inicia solo el cliente SSH instalado y espera el regreso a la consola.
+ * @param destination Destino validado por la lista de argumentos permitidos.
+ * @param port Puerto decimal validado.
+ * @return COMMAND_OK al cerrar normalmente; COMMAND_ERROR si falla la conexion.
+ */
+static enum result connect_ssh(const char *destination, const char *port) {
+    if (!isatty(STDIN_FILENO)) {
+        fputs("ssh: requiere una terminal interactiva; entra con ssh -t.\n", stderr);
+        return COMMAND_ERROR;
+    }
+    char user[65];
+    const char *at = strchr(destination, '@');
+    memcpy(user, destination, (size_t)(at - destination));
+    user[at - destination] = '\0';
+    char terminal[160] = "TERM=xterm";
+    const char *term = getenv("TERM");
+    if (term && strlen(term) < 128 && strspn(term, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.+") == strlen(term)) snprintf(terminal, sizeof(terminal), "TERM=%s", term);
+    char *environment[] = {"HOME=" SSH_HOME_PATH, "USER=gutsjail", "LOGNAME=gutsjail", "PATH=/usr/bin", "LANG=C", terminal, NULL};
+    char *arguments[] = {SSH_CLIENT_PATH, "-F", SSH_CONFIG_PATH, "-l", user, "-p", (char *)port, "--", (char *)(at + 1), NULL};
+    struct sigaction ignore = {0}, previous_int, previous_quit;
+    ignore.sa_handler = SIG_IGN;
+    sigemptyset(&ignore.sa_mask);
+    if (sigaction(SIGINT, &ignore, &previous_int) < 0) goto failed;
+    if (sigaction(SIGQUIT, &ignore, &previous_quit) < 0) {
+        sigaction(SIGINT, &previous_int, NULL);
+        goto failed;
+    }
+    fflush(NULL);
+    pid_t child = fork();
+    if (child == 0) {
+        sigaction(SIGINT, &previous_int, NULL);
+        sigaction(SIGQUIT, &previous_quit, NULL);
+        umask(0077);
+        if (chdir(SSH_HOME_PATH) == 0) execve(SSH_CLIENT_PATH, arguments, environment);
+        perror("ssh: cliente no disponible; actualiza con make install-ssh");
+        _exit(127);
+    }
+    int status = 0, saved = errno;
+    pid_t waited = -1;
+    if (child > 0) {
+        do { waited = waitpid(child, &status, 0); } while (waited < 0 && errno == EINTR);
+        saved = errno;
+    }
+    sigaction(SIGINT, &previous_int, NULL);
+    sigaction(SIGQUIT, &previous_quit, NULL);
+    if (child < 0 || waited < 0) { errno = saved; goto failed; }
+    return WIFEXITED(status) && WEXITSTATUS(status) == 0 ? COMMAND_OK : COMMAND_ERROR;
+failed:
+    perror("ssh");
+    return COMMAND_ERROR;
+}
+
 static enum result run_line(char *line) {
     char *end = line + strlen(line);
     while (end > line && strchr("\r\n \t", end[-1])) *--end = '\0';
@@ -317,6 +422,18 @@ static enum result run_line(char *line) {
     if (!command) return COMMAND_OK;
     char *argument = next_word(&cursor, &invalid);
     if (invalid) goto usage;
+    if (!strcmp(command, "ssh")) {
+        const char *port = "22";
+        if (argument && !strcmp(argument, "-p")) {
+            port = next_word(&cursor, &invalid);
+            argument = next_word(&cursor, &invalid);
+        }
+        if (!argument || !port || invalid || next_word(&cursor, &invalid) || invalid || !valid_ssh_destination(argument) || !valid_ssh_port(port)) {
+            fputs("Uso: ssh [-p <puerto>] <usuario>@<IP_o_host>\n", stderr);
+            return COMMAND_ERROR;
+        }
+        return connect_ssh(argument, port);
+    }
     if (!strcmp(command, "help") || !strcmp(command, "pwd") || !strcmp(command, "exit")) {
         if (argument) goto usage;
         if (!strcmp(command, "help")) show_help();
@@ -398,6 +515,8 @@ failed:
 int main(int argc, char **argv)
 {
     umask(0007);
+    /* El cliente hijo debe recibir las teclas pendientes, sin lectura anticipada. */
+    setvbuf(stdin, NULL, _IONBF, 0);
     if (argc >= 2) {
         if (argc != 3 || strcmp(argv[1], "-c") != 0) {
             fputs("Uso no permitido.\n", stderr);
